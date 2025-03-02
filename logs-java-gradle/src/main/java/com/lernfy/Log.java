@@ -46,39 +46,72 @@ public class Log {
 
     // Arrumar para que em alguns caso o dado coletado seja nulo e, se o número de dados coletados nulos exceder a uma certa quantidade, mudar de info para um warn log
     public void dataColumn(String column, Integer amountLines, Integer minValue, Integer maxValue) {
+        Integer amountNullCels = 0;
         for (int i = 1; i < amountLines; i++) {
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %d", column, ThreadLocalRandom.current().nextInt(minValue, maxValue+1)));
+
+            Integer dadoColetado;
+            if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
+                dadoColetado = null;
+                amountNullCels++;
+            }
+            else dadoColetado = ThreadLocalRandom.current().nextInt(minValue, maxValue+1);
+
+            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %d", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                     e.printStackTrace();
             }
         }
-        log.info(String.format("Dados coletados: %d | Células Vazias: %d", amountLines, ThreadLocalRandom.current().nextInt(0,amountLines+1)));
+        String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
+        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        else log.warn(finalMessage);
     }
 
     public void dataColumn(String column, Integer amountLines, Double minValue, Double maxValue) {
+        Integer amountNullCels = 0;
         for (int i = 1; i < amountLines; i++) {
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %.2f", column, ThreadLocalRandom.current().nextDouble(minValue, maxValue+1)));
+
+            Double dadoColetado;
+            if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
+                dadoColetado = null;
+                amountNullCels++;
+            }
+            else dadoColetado = ThreadLocalRandom.current().nextDouble(minValue, maxValue+1);
+
+            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %.2f", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        log.info(String.format("Dados coletados: %d | Células Vazias: %d", amountLines, ThreadLocalRandom.current().nextInt(0,amountLines+1)));
+        String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
+        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        else log.warn(finalMessage);
     }
 
     public void dataColumn(String column, Integer amountLines, String[] listaValores) {
+        Integer amountNullCels = 0;
         for (int i = 1; i < amountLines; i++) {
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, listaValores[i]));
+
+            String dadoColetado;
+            if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
+                dadoColetado = null;
+                amountNullCels++;
+            }
+            else dadoColetado = listaValores[i];
+
+            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        log.info(String.format("Dados coletados: %d | Células Vazias: %d", amountLines, ThreadLocalRandom.current().nextInt(0,amountLines+1)));
+        String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
+        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        else log.warn(finalMessage);
     }
 
     public void finalMessage(String file, String[] nameWorkSheets) {
