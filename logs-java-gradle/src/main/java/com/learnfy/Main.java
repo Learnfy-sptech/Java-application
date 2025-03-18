@@ -1,4 +1,4 @@
-package com.lernfy;
+package com.learnfy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class Main {
         customLog.newWorksheet(worksheets[0]);
         customLog.dataColumn("Escola", amountLines, schoolNames);
         customLog.dataColumn("Idade", amountLines, 18, 42);
-        customLog.dataColumn("NotaMatemática", amountLines, 100, 100);
+        customLog.dataColumn("NotaMatemática", amountLines, 100, 1000);
         customLog.dataColumn("NotaCiênciasHumanas", amountLines, 100, 1000);
         customLog.dataColumn("NotaCiênciasNatureza", amountLines, 100, 1000);
         customLog.dataColumn("Português", amountLines, 100, 1000);
@@ -63,9 +63,6 @@ public class Main {
 
     }
 
-
-
-
-}
+    }
 
 
