@@ -1,15 +1,12 @@
-package com.lernfy;
+package com.learnfy;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Log {
     final Logger log;
-
     public Log(Logger log) {
         this.log = log;
     }
@@ -17,11 +14,11 @@ public class Log {
     public void titleLog() {
         String[] title = {
                 "",
-                "  ##       #######     ###     ######   ##    ##  #######  #######  ##    ##  ",
-                "  ##       ##         #   #    ##   ##  ###   ##    ##     ##        ##  ##  ",
-                "  ##       #######   #######   ######   ## #  ##    ##     #######    ####  ",
-                "  ##       ##       ##     ##  ##  ##   ##  # ##    ##     ##          ##  ",
-                "  #######  #######  ##     ##  ##   ##  ##   ###  #######  ##          ##  ",
+                "  ##       #######     ###     ######   ##    ##  #######  ##    ##  ",
+                "  ##       ##         #   #    ##   ##  ###   ##  ##        ##  ##  ",
+                "  ##       #######   #######   ######   ## #  ##  #######    ####  ",
+                "  ##       ##       ##     ##  ##  ##   ##  # ##  ##          ##  ",
+                "  #######  #######  ##     ##  ##   ##  ##   ###  ##          ##  ",
                 "",
         };
 
@@ -50,7 +47,7 @@ public class Log {
         for (int i = 1; i < amountLines; i++) {
 
             Integer dadoColetado;
-            if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
+            if ( i % 3 == 0 && ThreadLocalRandom.current().nextBoolean()) {
                 dadoColetado = null;
                 amountNullCels++;
             }
