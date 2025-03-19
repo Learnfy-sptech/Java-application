@@ -47,13 +47,16 @@ public class Log {
         for (int i = 1; i < amountLines; i++) {
 
             Integer dadoColetado;
-            if ( i % 3 == 0 && ThreadLocalRandom.current().nextBoolean()) {
+            if ( i % 4 == 0 && ThreadLocalRandom.current().nextBoolean()) {
                 dadoColetado = null;
+                log.warn(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, dadoColetado));
                 amountNullCels++;
             }
-            else dadoColetado = ThreadLocalRandom.current().nextInt(minValue, maxValue+1);
+            else {
+                dadoColetado = ThreadLocalRandom.current().nextInt(minValue, maxValue+1);
+                log.info(String.format("Coletando dados da coluna %s, Dado coletado - %d", column, dadoColetado));
+            }
 
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %d", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -61,7 +64,7 @@ public class Log {
             }
         }
         String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
-        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        if (amountNullCels < (amountLines * 0.10)) log.info(finalMessage);
         else log.warn(finalMessage);
     }
 
@@ -72,11 +75,14 @@ public class Log {
             Double dadoColetado;
             if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
                 dadoColetado = null;
+                log.warn(String.format("Coletando dados da coluna %s, Dado coletado - %.2f", column, dadoColetado));
                 amountNullCels++;
             }
-            else dadoColetado = ThreadLocalRandom.current().nextDouble(minValue, maxValue+1);
+            else {
+                dadoColetado = ThreadLocalRandom.current().nextDouble(minValue, maxValue+1);
+                log.info(String.format("Coletando dados da coluna %s, Dado coletado - %.2f", column, dadoColetado));
+            }
 
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %.2f", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -84,7 +90,7 @@ public class Log {
             }
         }
         String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
-        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        if (amountNullCels < (amountLines * 0.10)) log.info(finalMessage);
         else log.warn(finalMessage);
     }
 
@@ -95,11 +101,14 @@ public class Log {
             String dadoColetado;
             if ( i % 4 == 0 && ThreadLocalRandom.current().nextInt(0,2) == 1) {
                 dadoColetado = null;
+                log.warn(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, dadoColetado));
                 amountNullCels++;
             }
-            else dadoColetado = listaValores[i];
+            else {
+                dadoColetado = listaValores[i];
+                log.info(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, dadoColetado));
+            }
 
-            log.info(String.format("Coletando dados da coluna %s, Dado coletado - %s", column, dadoColetado));
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -107,7 +116,7 @@ public class Log {
             }
         }
         String finalMessage = String.format("Dados coletados: %d | Células Vazias: %d", amountLines, amountNullCels);
-        if (amountNullCels < (amountLines * 0.15)) log.info(finalMessage);
+        if (amountNullCels < (amountLines * 0.10)) log.info(finalMessage);
         else log.warn(finalMessage);
     }
 
