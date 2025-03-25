@@ -80,3 +80,48 @@
 [2025-03-18 13:15:28] [INFO] [main] com.learnfy.Log - Coletando dados da coluna NotaMatemática, Dado coletado - 100
 [2025-03-18 13:15:28] [INFO] [main] com.learnfy.Log - Coletando dados da coluna NotaMatemática, Dado coletado - 100
 [2025-03-18 13:15:29] [INFO] [main] com.learnfy.Log - Coletando dados da coluna NotaMatemática, Dado coletado - 100
+[2025-03-19 08:40:29] [INFO] [main] com.learnfy.Log - Arquivo que será lido: ENEM 2021
+[2025-03-19 08:40:29] [INFO] [main] com.learnfy.Log - Planilha atual: Notas por Área de Conhecimento
+[2025-03-19 08:40:29] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola Estrela do Saber
+[2025-03-19 08:40:30] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Aurora
+[2025-03-19 08:40:30] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola do Sol Nascente
+[2025-03-19 08:40:31] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - null
+[2025-03-19 08:40:31] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola Jardim das Letras
+[2025-03-19 08:40:32] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Einstein
+[2025-03-19 08:40:32] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Pioneiros da Educação
+[2025-03-19 08:40:33] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - null
+[2025-03-19 08:40:33] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio das Águas Claras
+[2025-03-19 08:40:34] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola Monte Verde
+[2025-03-19 08:40:34] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Futuro Brilhante
+[2025-03-19 08:40:35] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - null
+[2025-03-19 08:40:35] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola de Excelência
+[2025-03-19 08:40:36] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto São Pedro
+[2025-03-19 08:40:36] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Nova Geração
+[2025-03-19 08:40:37] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - null
+[2025-03-19 08:40:37] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Educacional Flor do Campo
+[2025-03-19 08:40:38] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Lumiar
+[2025-03-19 08:40:38] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola Brilho do Conhecimento
+[2025-03-19 08:40:39] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Mente Aberta
+[2025-03-19 08:40:39] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Valor e Virtude
+[2025-03-19 08:40:40] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola Vida Plena
+[2025-03-19 08:40:40] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Integração
+[2025-03-19 08:40:41] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Paz e Saber
+[2025-03-19 08:40:41] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Escola de Talentos
+[2025-03-19 08:40:42] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Evolução
+[2025-03-19 08:40:42] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Colégio Criar e Aprender
+[2025-03-19 08:40:43] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - null
+[2025-03-19 08:40:43] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Escola, Dado coletado - Instituto Raízes do Saber
+[2025-03-19 08:40:44] [WARN] [main] com.learnfy.Log - Dados coletados: 30 | Células Vazias: 5
+[2025-03-19 08:40:44] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 37
+[2025-03-19 08:40:44] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 34
+[2025-03-19 08:40:45] [WARN] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - null
+[2025-03-19 08:40:45] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 26
+[2025-03-19 08:40:46] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 24
+[2025-03-19 08:40:46] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 38
+[2025-03-19 08:40:47] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 35
+[2025-03-19 08:40:47] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 36
+[2025-03-19 08:40:48] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 26
+[2025-03-19 08:40:48] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 36
+[2025-03-19 08:40:49] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 34
+[2025-03-19 08:40:49] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 41
+[2025-03-19 08:40:50] [INFO] [main] com.learnfy.Log - Coletando dados da coluna Idade, Dado coletado - 41
