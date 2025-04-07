@@ -10,12 +10,9 @@ public class ConexaoBanco {
 
     public ConexaoBanco() {
         BasicDataSource basicDataSource = new BasicDataSource();
-        String urlString = "jdbc:mysql://" + System.getenv("EC2_IP") + "/db_cursos";
-        basicDataSource.setUrl(urlString);
-        String usernameString = System.getenv("USER_DB");
-        basicDataSource.setUsername(usernameString);
-        String passwordString = System.getenv("PASS_DB");
-        basicDataSource.setPassword(passwordString);
+        basicDataSource.setUrl("jdbc:mysql://35.172.194.187/db_cursos");
+        basicDataSource.setUsername("localuser");
+        basicDataSource.setPassword("lucas1234");
 
         this.basicDataSource = basicDataSource;
         this.jdbcTemplate = new JdbcTemplate(basicDataSource);

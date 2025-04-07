@@ -9,7 +9,6 @@ public class DadosCurso {
     private Integer tipo_organizacao_academica;
     private Integer tipo_organizacao_administrativa;
     private Integer rede;
-    private Integer id_ies;
     private String nome_curso;
 
     public DadosCurso() {
@@ -23,7 +22,6 @@ public class DadosCurso {
         this.tipo_organizacao_academica = tipo_organizacao_academica;
         this.tipo_organizacao_administrativa = tipo_organizacao_administrativa;
         this.rede = rede;
-        this.id_ies = id_ies;
         this.nome_curso = nome_curso;
     }
 
@@ -81,14 +79,6 @@ public class DadosCurso {
 
     public void setRede(Integer rede) {
         this.rede = rede;
-    }
-
-    public Integer getId_ies() {
-        return id_ies;
-    }
-
-    public void setId_ies(Integer id_ies) {
-        this.id_ies = id_ies;
     }
 
     public String getNome_curso() {
