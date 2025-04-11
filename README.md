@@ -63,3 +63,7 @@ public class Main {
         log.finalMessage("dados.xlsx", worksheets);
     }
 }
+
+
+# Para compilar o JAVA em um arquivo .jar executável
+mvn clean compile assembly:single
