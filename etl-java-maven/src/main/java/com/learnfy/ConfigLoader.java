@@ -2,6 +2,7 @@ package com.learnfy;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigLoader {
@@ -9,10 +10,13 @@ public class ConfigLoader {
 
     static {
         try {
-            FileInputStream input = new FileInputStream("config/config.properties");
+            InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream("config.properties");
+            if (input == null) {
+                throw new RuntimeException("Arquivo config.properties não encontrado no classpath.");
+            }
             properties.load(input);
         } catch (IOException e) {
-            System.err.println("Erro ao carregar config.properties: " + e.getMessage());
+            throw new RuntimeException("Erro ao carregar config.properties: " + e.getMessage(), e);
         }
     }
 

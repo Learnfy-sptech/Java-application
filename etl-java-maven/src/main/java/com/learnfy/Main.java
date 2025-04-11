@@ -1,9 +1,11 @@
 package com.learnfy;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -14,12 +16,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -38,13 +42,17 @@ public class Main {
         }
     }
 
-    public static List<String> listarArquivosS3(String bucketName, String prefixo) {
+    public static List<String> listarArquivosS3(String bucketName, String prefixo) throws IOException {
         List<String> arquivos = new ArrayList<>();
-        Region region = Region.US_EAST_1;
+        String accessKey = ConfigLoader.get("aws_access_key_id");
+        String secretKey = ConfigLoader.get("aws_secret_access_key");
+        String regionName = ConfigLoader.get("aws_region");
+
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
         try (S3Client s3 = S3Client.builder()
-                .region(region)
-                .credentialsProvider(ProfileCredentialsProvider.create())
+                .region(Region.of(regionName))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .build()) {
             ListObjectsV2Request listReq = ListObjectsV2Request.builder()
                     .bucket(bucketName)
@@ -63,12 +71,16 @@ public class Main {
         return arquivos;
     }
 
-    public static void downloadFromS3(String bucketName, String key, String downloadPath) {
-        Region region = Region.US_EAST_1;
+    public static void downloadFromS3(String bucketName, String key, String downloadPath) throws IOException {
+        String accessKey = ConfigLoader.get("aws_access_key_id");
+        String secretKey = ConfigLoader.get("aws_secret_access_key");
+        String regionName = ConfigLoader.get("aws_region");
+
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
         try (S3Client s3 = S3Client.builder()
-                .region(region)
-                .credentialsProvider(ProfileCredentialsProvider.create()) // usa o perfil default ~/.aws/credentials
+                .region(Region.of(regionName))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .build()) {
             GetObjectRequest request = GetObjectRequest.builder()
                     .bucket(bucketName)
