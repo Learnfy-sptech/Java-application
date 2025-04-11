@@ -44,9 +44,9 @@ public class Main {
 
     public static List<String> listarArquivosS3(String bucketName, String prefixo) throws IOException {
         List<String> arquivos = new ArrayList<>();
-        String accessKey = ConfigLoader.get("aws_access_key_id");
-        String secretKey = ConfigLoader.get("aws_secret_access_key");
-        String regionName = ConfigLoader.get("aws_region");
+        String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
+        String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
+        String regionName = ConfigLoader.get("AWS_REGION");
 
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
@@ -72,9 +72,9 @@ public class Main {
     }
 
     public static void downloadFromS3(String bucketName, String key, String downloadPath) throws IOException {
-        String accessKey = ConfigLoader.get("aws_access_key_id");
-        String secretKey = ConfigLoader.get("aws_secret_access_key");
-        String regionName = ConfigLoader.get("aws_region");
+        String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
+        String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
+        String regionName = ConfigLoader.get("AWS_REGION");
 
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 

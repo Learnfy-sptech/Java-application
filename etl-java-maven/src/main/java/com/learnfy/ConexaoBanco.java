@@ -10,9 +10,9 @@ public class ConexaoBanco {
     public ConexaoBanco() {
         DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        ds.setUrl(ConfigLoader.get("db.url"));
-        ds.setUsername(ConfigLoader.get("db.username"));
-        ds.setPassword(ConfigLoader.get("db.password"));
+        ds.setUrl(ConfigLoader.get("DB_URL"));
+        ds.setUsername(ConfigLoader.get("DB_USERNAME"));
+        ds.setPassword(ConfigLoader.get("DB_PASSWORD"));
         this.jdbcTemplate = new JdbcTemplate(ds);
     }
 
