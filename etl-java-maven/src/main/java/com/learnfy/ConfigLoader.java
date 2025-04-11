@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigLoader {
+
     private static final Properties properties = new Properties();
 
     static {
@@ -21,6 +22,9 @@ public class ConfigLoader {
     }
 
     public static String get(String chave) {
+        String valor = System.getenv(chave.toUpperCase());
+        if (valor != null && !valor.isBlank()) return valor;
+
         return properties.getProperty(chave);
     }
 }
