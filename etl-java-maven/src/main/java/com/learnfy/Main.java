@@ -27,33 +27,36 @@ import java.util.Properties;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        // Conexões com a S3
         String bucketName = "learnfy-database";
         String prefixo = "planilhas/";
 
-        List<String> arquivos = listarArquivosS3(bucketName, prefixo);
+        S3Client s3Client = criarS3Client();
+        List<String> arquivos = listarArquivosS3(s3Client, bucketName, prefixo);
 
         for (String key : arquivos) {
-            if (key.endsWith(".xlsx") || key.endsWith(".xls") || key.endsWith(".csv")){
-                String nomeArquivoLocal = key.substring(key.lastIndexOf("/") + 1);
-                downloadFromS3(bucketName, key, nomeArquivoLocal);
-                readExcel(nomeArquivoLocal);
+            if (key.endsWith(".xlsx") || key.endsWith(".xls") || key.endsWith(".csv")) {
+                lerPlanilhaDiretoDoS3(s3Client, bucketName, key);
             }
         }
+        s3Client.close();
     }
 
-    public static List<String> listarArquivosS3(String bucketName, String prefixo) throws IOException {
-        List<String> arquivos = new ArrayList<>();
+    public static S3Client criarS3Client() {
         String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
         String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
         String regionName = ConfigLoader.get("AWS_REGION");
 
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
-        try (S3Client s3 = S3Client.builder()
+        return S3Client.builder()
                 .region(Region.of(regionName))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .build()) {
+                .build();
+    }
+
+    public static List<String> listarArquivosS3(S3Client s3, String bucketName, String prefixo) {
+        List<String> arquivos = new ArrayList<>();
+        try {
             ListObjectsV2Request listReq = ListObjectsV2Request.builder()
                     .bucket(bucketName)
                     .prefix(prefixo)
@@ -65,45 +68,29 @@ public class Main {
                 arquivos.add(obj.key());
             }
         } catch (Exception e) {
-            System.err.println("Erro ao listar os arquivos: " + e.getMessage() );
+            System.err.println("Erro ao listar os arquivos: " + e.getMessage());
         }
-
         return arquivos;
     }
 
-    public static void downloadFromS3(String bucketName, String key, String downloadPath) throws IOException {
-        String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
-        String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
-        String regionName = ConfigLoader.get("AWS_REGION");
+    public static void lerPlanilhaDiretoDoS3(S3Client s3, String bucketName, String key) {
+        try (InputStream s3Stream = s3.getObject(GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build())) {
 
-        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
+            Workbook workbook = new XSSFWorkbook(s3Stream);
 
-        try (S3Client s3 = S3Client.builder()
-                .region(Region.of(regionName))
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .build()) {
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .build();
-            Path path = Paths.get(downloadPath);
-            s3.getObject(request, path);
-            System.out.println("✔ Arquivo baixado com sucesso de " + bucketName + "/" + key);
-        } catch (Exception e) {
-            System.err.println("Erro ao baixar do S3: " + e.getMessage());
-        }
-    }
-
-    public static void readExcel(String filePath) {
-        try (InputStream file = new FileInputStream(filePath)) {
-            Workbook workbook = new XSSFWorkbook(file);
             ConexaoBanco conexao = new ConexaoBanco();
             JdbcTemplate jdbcTemplate = conexao.getJdbcTemplate();
-            LeitorDados leitorArquivo01 = new LeitorDados(jdbcTemplate);
-            leitorArquivo01.varrerPlanilha(workbook);
+            LeitorDados leitor = new LeitorDados(jdbcTemplate);
+            leitor.varrerPlanilha(workbook);
+
             workbook.close();
-        } catch (IOException e) {
-            System.err.println("Erro ao ler o arquivo Excel: " + e.getMessage());
+
+            System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
+        } catch (Exception e) {
+            System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
         }
     }
 }
