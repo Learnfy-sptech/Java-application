@@ -1,25 +1,19 @@
 package com.learnfy;
 
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.xml.sax.SAXException;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
 
-        ConexaoBanco conexao = new ConexaoBanco();
-        JdbcTemplate jdbcTemplate = conexao.getJdbcTemplate();
-        LeitorDados leitorArquivo01 = new LeitorDados(jdbcTemplate);
+    public static void main(String[] args) throws IOException, OpenXML4JException, SAXException {
 
-        Path path = Path.of("C:/Users/Administrador/Documents/base-dados-cursos-ensino-superior-reduzido.xlsx");
-        InputStream file = Files.newInputStream(path);
+        LeitorDeArquivos leitorDeArquivos = new LeitorDeArquivos();
 
-        Workbook workbook = new XSSFWorkbook(file);
-        leitorArquivo01.varrerPlanilha(workbook);
+        List<Curso> cursos = leitorDeArquivos.obterDadosCurso("C:/Users/Administrador/Documents/base-dados-cursos-ensino-superior.xlsx");
+        leitorDeArquivos.inserirCursos(cursos);
 
     }
 }
