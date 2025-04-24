@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LeitorDados {
-
     private JdbcTemplate jdbcTemplate;
 
     public LeitorDados(JdbcTemplate jdbcTemplate) {
