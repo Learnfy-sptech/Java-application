@@ -31,7 +31,7 @@ public class S3Service {
                 .build();
     }
 
-    public static List<String> listarArquivos(String bucketName, String prefixo) {
+        public static List<String> listarArquivos(String bucketName, String prefixo) {
         System.out.println("Bucket Name: " + bucketName);
         List<String> arquivos = new ArrayList<>();
         if (bucketName == null || bucketName.isEmpty()) {

@@ -1,7 +1,9 @@
 package com.learnfy.processador;
 
 import com.learnfy.modelo.Empregabilidade;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -29,11 +31,18 @@ public class ProcessadorEmpregabilidade implements Processador {
                 .key(key)
                 .build())) {
 
-            Workbook workbook = WorkbookFactory.create(inputStream);
-            List<Empregabilidade> dadosEmpregabilidadeList = new ArrayList<>();
+            Workbook workbook;
+            if (key.endsWith(".xls")) {
+                workbook = new HSSFWorkbook(inputStream);
+            } else {
+                workbook = new XSSFWorkbook(inputStream);
+            }
 
             Sheet sheet = workbook.getSheetAt(0);
             System.out.println("Planilha lida com sucesso. Processando linhas...");
+
+            final int BATCH_SIZE = 100;
+            List<Empregabilidade> batchEmpregabilidade = new ArrayList<>(BATCH_SIZE);
 
             boolean primeiraLinha = true;
 
@@ -45,17 +54,20 @@ public class ProcessadorEmpregabilidade implements Processador {
 
                 try {
                     Empregabilidade dados = extrairDados(row);
-                    dadosEmpregabilidadeList.add(dados);
+                    batchEmpregabilidade.add(dados);
+
+                    if (batchEmpregabilidade.size() == BATCH_SIZE) {
+                        enviarBatch(batchEmpregabilidade);
+                        batchEmpregabilidade.clear();
+                    }
                 } catch (Exception e) {
                     System.err.println("Erro ao processar linha " + row.getRowNum() + ": " + e.getMessage());
                 }
             }
 
-            final int BATCH_SIZE = 500;
-            for (int i = 0; i < dadosEmpregabilidadeList.size(); i += BATCH_SIZE) {
-                int end = Math.min(i + BATCH_SIZE, dadosEmpregabilidadeList.size());
-                List<Empregabilidade> subList = dadosEmpregabilidadeList.subList(i, end);
-                enviarBatch(subList);
+            if (!batchEmpregabilidade.isEmpty()) {
+                enviarBatch(batchEmpregabilidade);
+                batchEmpregabilidade.clear();
             }
 
             workbook.close();
