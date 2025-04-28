@@ -83,8 +83,8 @@ public class ProcessadorEmpregabilidade implements Processador {
             for (Cell cell : row) {
                 switch (cell.getColumnIndex()) {
                     case 0 -> dados.setAno((int) getNumericValue(cell));
-                    case 1 -> dados.setSigla_uf(getStringValue(cell));
-                    case 2 -> dados.setCbo_2002((int) getNumericValue(cell));
+                    case 1 -> dados.setSiglaUf(getStringValue(cell));
+                    case 2 -> dados.setCbo2002((int) getNumericValue(cell));
                     case 3 -> dados.setCbo_2002_descricao(getStringValue(cell));
                     case 4 -> dados.setCbo_2002_descricao_familia(getStringValue(cell));
                     case 5 -> dados.setCategoria(getStringValue(cell));
@@ -115,8 +115,8 @@ public class ProcessadorEmpregabilidade implements Processador {
 
         jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
-            ps.setString(2, dados.getSigla_uf() != null ? dados.getSigla_uf() : "");
-            ps.setInt(3, dados.getCbo_2002() != null ? dados.getCbo_2002() : 0);
+            ps.setString(2, dados.getSiglaUf() != null ? dados.getSiglaUf() : "");
+            ps.setInt(3, dados.getCbo2002() != null ? dados.getCbo2002() : 0);
             ps.setString(4, dados.getCbo_2002_descricao() != null ? dados.getCbo_2002_descricao() : "");
             ps.setString(5, dados.getCbo_2002_descricao_familia() != null ? dados.getCbo_2002_descricao_familia() : "");
             ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");

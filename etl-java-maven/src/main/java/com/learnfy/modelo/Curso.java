@@ -2,31 +2,31 @@ package com.learnfy.modelo;
 
 public class Curso {
 
-    Integer ano;
-    String siglaUf;
-    Integer idMunicipio;
-    String rede;
-    Integer idIes;
-    String nomeCurso;
-    String nomeArea;
-    Integer grauAcademico;
-    Integer modalidadeEnsino;
-    Integer qtdVagas;
-    Integer qtdVagasDiurno;
-    Integer qtdVagasNoturno;
-    Integer qtdVagasEad;
-    Integer qtdIncritos;
-    Integer qtdIncritosDiurno;
-    Integer qtdIncritosNoturno;
-    Integer qtdIncritosEad;
-    Integer qtdConcluintesDiurno;
-    Integer qtdConcluintesNoturno;
-    Integer qtdIngressantesRedePublica;
-    Integer qtdIngressantesRedePrivada;
-    Integer qtdConcluintesRedePublica;
-    Integer qtdConcluintesRedePrivada;
-    Integer qtdIngressantesAtividadeExtra;
-    Integer qtdConcluintesAtividadeExtra;
+    private Integer ano;
+    private String siglaUf;
+    private Integer idMunicipio;
+    private String rede;
+    private Integer idIes;
+    private String nomeCurso;
+    private String nomeArea;
+    private Integer grauAcademico;
+    private Integer modalidadeEnsino;
+    private Integer qtdVagas;
+    private Integer qtdVagasDiurno;
+    private Integer qtdVagasNoturno;
+    private Integer qtdVagasEad;
+    private Integer qtdIncritos;
+    private Integer qtdIncritosDiurno;
+    private Integer qtdIncritosNoturno;
+    private Integer qtdIncritosEad;
+    private Integer qtdConcluintesDiurno;
+    private Integer qtdConcluintesNoturno;
+    private Integer qtdIngressantesRedePublica;
+    private Integer qtdIngressantesRedePrivada;
+    private Integer qtdConcluintesRedePublica;
+    private Integer qtdConcluintesRedePrivada;
+    private Integer qtdIngressantesAtividadeExtra;
+    private Integer qtdConcluintesAtividadeExtra;
 
     public Curso() {
 

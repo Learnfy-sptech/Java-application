@@ -2,27 +2,27 @@ package com.learnfy.modelo;
 
 public class Empregabilidade {
     private Integer ano;
-    private String sigla_uf;
-    private Integer cbo_2002;
-    private String cbo_2002_descricao;
-    private String cbo_2002_descricao_familia;
+    private String siglaUf;
+    private Integer cbo2002;
+    private String cbo2002Descricao;
+    private String cbo2002DescricaoFamilia;
     private String categoria;
-    private String grau_instrucao;
-    private Double salario_mensal;
+    private String grauInstrucao;
+    private Double salarioMensal;
 
     public Empregabilidade() {
     }
 
-    public Empregabilidade(Integer ano, String sigla_uf, Integer cbo_2002, String cbo_2002_descricao,
-                                String cbo_2002_descricao_familia, String categoria, String grau_instrucao, Double salario_mensal) {
+    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo_2002_descricao,
+                           String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal) {
         this.ano = ano;
-        this.sigla_uf = sigla_uf;
-        this.cbo_2002 = cbo_2002;
-        this.cbo_2002_descricao = cbo_2002_descricao;
-        this.cbo_2002_descricao_familia = cbo_2002_descricao_familia;
+        this.siglaUf = siglaUf;
+        this.cbo2002 = cbo2002;
+        this.cbo2002Descricao = cbo_2002_descricao;
+        this.cbo2002DescricaoFamilia = cbo2002DescricaoFamilia;
         this.categoria = categoria;
-        this.grau_instrucao = grau_instrucao;
-        this.salario_mensal = salario_mensal;
+        this.grauInstrucao = grauInstrucao;
+        this.salarioMensal = salarioMensal;
     }
 
     public Integer getAno() {
@@ -33,36 +33,36 @@ public class Empregabilidade {
         this.ano = ano;
     }
 
-    public String getSigla_uf() {
-        return sigla_uf;
+    public String getSiglaUf() {
+        return siglaUf;
     }
 
-    public void setSigla_uf(String sigla_uf) {
-        this.sigla_uf = sigla_uf;
+    public void setSiglaUf(String siglaUf) {
+        this.siglaUf = siglaUf;
     }
 
-    public Integer getCbo_2002() {
-        return cbo_2002;
+    public Integer getCbo2002() {
+        return cbo2002;
     }
 
-    public void setCbo_2002(Integer cbo_2002) {
-        this.cbo_2002 = cbo_2002;
+    public void setCbo2002(Integer cbo2002) {
+        this.cbo2002 = cbo2002;
     }
 
-    public String getCbo_2002_descricao() {
-        return cbo_2002_descricao;
+    public String getCbo2002Descricao() {
+        return cbo2002Descricao;
     }
 
-    public void setCbo_2002_descricao(String cbo_2002_descricao) {
-        this.cbo_2002_descricao = cbo_2002_descricao;
+    public void setCbo2002Descricao(String cbo2002Descricao) {
+        this.cbo2002Descricao = cbo2002Descricao;
     }
 
-    public String getCbo_2002_descricao_familia() {
-        return cbo_2002_descricao_familia;
+    public String getCbo2002DescricaoFamilia() {
+        return cbo2002DescricaoFamilia;
     }
 
-    public void setCbo_2002_descricao_familia(String cbo_2002_descricao_familia) {
-        this.cbo_2002_descricao_familia = cbo_2002_descricao_familia;
+    public void setCbo2002DescricaoFamilia(String cbo2002DescricaoFamilia) {
+        this.cbo2002DescricaoFamilia = cbo2002DescricaoFamilia;
     }
 
     public String getCategoria() {
@@ -73,19 +73,33 @@ public class Empregabilidade {
         this.categoria = categoria;
     }
 
-    public String getGrau_instrucao() {
-        return grau_instrucao;
+    public String getGrauInstrucao() {
+        return grauInstrucao;
     }
 
-    public void setGrau_instrucao(String grau_instrucao) {
-        this.grau_instrucao = grau_instrucao;
+    public void setGrauInstrucao(String grauInstrucao) {
+        this.grauInstrucao = grauInstrucao;
     }
 
-    public Double getSalario_mensal() {
-        return salario_mensal;
+    public Double getSalarioMensal() {
+        return salarioMensal;
     }
 
-    public void setSalario_mensal(Double salario_mensal) {
-        this.salario_mensal = salario_mensal;
+    public void setSalarioMensal(Double salarioMensal) {
+        this.salarioMensal = salarioMensal;
+    }
+
+    @Override
+    public String toString() {
+        return "Empregabilidade{" +
+                "ano=" + ano +
+                ", siglaUf='" + siglaUf + '\'' +
+                ", cbo2002=" + cbo2002 +
+                ", cbo2002Descricao='" + cbo2002Descricao + '\'' +
+                ", cbo2002DescricaoFamilia='" + cbo2002DescricaoFamilia + '\'' +
+                ", categoria='" + categoria + '\'' +
+                ", grauInstrucao='" + grauInstrucao + '\'' +
+                ", salarioMensal=" + salarioMensal +
+                '}';
     }
 }
