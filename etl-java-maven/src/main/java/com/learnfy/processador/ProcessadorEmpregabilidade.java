@@ -85,11 +85,11 @@ public class ProcessadorEmpregabilidade implements Processador {
                     case 0 -> dados.setAno((int) getNumericValue(cell));
                     case 1 -> dados.setSiglaUf(getStringValue(cell));
                     case 2 -> dados.setCbo2002((int) getNumericValue(cell));
-                    case 3 -> dados.setCbo_2002_descricao(getStringValue(cell));
-                    case 4 -> dados.setCbo_2002_descricao_familia(getStringValue(cell));
+                    case 3 -> dados.setCbo2002Descricao(getStringValue(cell));
+                    case 4 -> dados.setCbo2002DescricaoFamilia(getStringValue(cell));
                     case 5 -> dados.setCategoria(getStringValue(cell));
-                    case 6 -> dados.setGrau_instrucao(getStringValue(cell));
-                    case 7 -> dados.setSalario_mensal(getNumericValue(cell));
+                    case 6 -> dados.setGrauInstrucao(getStringValue(cell));
+                    case 7 -> dados.setSalarioMensal(getNumericValue(cell));
                 }
             }
         } catch (Exception e) {
@@ -117,11 +117,11 @@ public class ProcessadorEmpregabilidade implements Processador {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
             ps.setString(2, dados.getSiglaUf() != null ? dados.getSiglaUf() : "");
             ps.setInt(3, dados.getCbo2002() != null ? dados.getCbo2002() : 0);
-            ps.setString(4, dados.getCbo_2002_descricao() != null ? dados.getCbo_2002_descricao() : "");
-            ps.setString(5, dados.getCbo_2002_descricao_familia() != null ? dados.getCbo_2002_descricao_familia() : "");
+            ps.setString(4, dados.getCbo2002Descricao() != null ? dados.getCbo2002Descricao() : "");
+            ps.setString(5, dados.getCbo2002DescricaoFamilia() != null ? dados.getCbo2002DescricaoFamilia() : "");
             ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");
-            ps.setString(7, dados.getGrau_instrucao() != null ? dados.getGrau_instrucao() : "");
-            ps.setDouble(8, dados.getSalario_mensal() != null ? dados.getSalario_mensal() : 0.0);
+            ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
+            ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
         });
     }
 }
