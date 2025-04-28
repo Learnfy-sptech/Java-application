@@ -18,10 +18,12 @@ public class Main {
 
         List<String> arquivos = S3Service.listarArquivos(bucket, prefixo);
 
-        for (String key : arquivos) {
-            if (key.endsWith(".xlsx") || key.endsWith(".xls") || key.endsWith(".csv")) {
-                Processador processador = ProcessadorFactory.getProcessador(key, jdbcTemplate, s3Client, bucket);
-                processador.processar(bucket, key);
+        if (!arquivos.isEmpty()) {
+            String arquivoMaisRecente = arquivos.getFirst();
+
+            if (arquivoMaisRecente.endsWith(".xlsx") || arquivoMaisRecente.endsWith(".xls") || arquivoMaisRecente.endsWith(".csv")) {
+                Processador processador = ProcessadorFactory.getProcessador(arquivoMaisRecente, jdbcTemplate, s3Client, bucket);
+                processador.processar(bucket, arquivoMaisRecente);
             }
         }
     }

@@ -46,7 +46,11 @@ public class S3Service {
 
             ListObjectsV2Response listRes = s3Client.listObjectsV2(listReq);
 
-            for (S3Object obj : listRes.contents()) {
+            // Implementação de sempre fazer a inserção apenas no arquivo mais recente adicionado
+            List<S3Object> objetos = new ArrayList<>(listRes.contents());
+            objetos.sort((o1, o2) -> o2.lastModified().compareTo(o1.lastModified()));
+
+            for (S3Object obj : objetos) {
                 arquivos.add(obj.key());
             }
         } catch (Exception e) {
