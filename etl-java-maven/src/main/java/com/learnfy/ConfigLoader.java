@@ -1,6 +1,5 @@
 package com.learnfy;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -23,7 +22,10 @@ public class ConfigLoader {
 
     public static String get(String chave) {
         String valor = System.getenv(chave.toUpperCase());
-        if (valor != null && !valor.isBlank()) return valor;
+        if (valor != null && !valor.isBlank()) {
+            System.out.println("Valor da variável de ambiente " + chave + ": " + valor); // Log
+            return valor;
+        }
 
         return properties.getProperty(chave);
     }
