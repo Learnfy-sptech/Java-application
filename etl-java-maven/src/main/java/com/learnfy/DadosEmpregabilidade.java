@@ -98,79 +98,59 @@
 
 package com.learnfy;
 
-public class DadosCurso {
+public class DadosEmpregabilidade {
 
     private Integer ano;
     private String sigla_uf;
-    private String nome_curso_cine;
-    private String nome_area_geral;
-    private Integer quantidade_vagas_processos_seletivos;
-    private Integer quantidade_inscritos;
-    private Integer quantidade_inscritos_ead;
-    private Integer quantidade_ingressantes_60_mais;
-    private Integer quantidade_matriculas;
-    private Integer quantidade_concluintes;
+    private Integer cbo_2002;
+    private String cbo_2002_descricao;
+    private String cbo_2002_descricao_familia;
+    private String categoria;
+    private String grau_instrucao;
+    private Double salario_mensal;
 
-    public DadosCurso() {
+    public DadosEmpregabilidade() {
     }
 
-    public DadosCurso(Integer ano, String sigla_uf, String nome_curso_cine, String nome_area_geral,
-                      Integer quantidade_vagas_processos_seletivos, Integer quantidade_inscritos,
-                      Integer quantidade_inscritos_ead, Integer quantidade_ingressantes_60_mais,
-                      Integer quantidade_matriculas, Integer quantidade_concluintes) {
+    public DadosEmpregabilidade(Integer ano, String sigla_uf, Integer cbo_2002, String cbo_2002_descricao,
+                                String cbo_2002_descricao_familia, String categoria, String grau_instrucao, Double salario_mensal) {
         this.ano = ano;
         this.sigla_uf = sigla_uf;
-        this.nome_curso_cine = nome_curso_cine;
-        this.nome_area_geral = nome_area_geral;
-        this.quantidade_vagas_processos_seletivos = quantidade_vagas_processos_seletivos;
-        this.quantidade_inscritos = quantidade_inscritos;
-        this.quantidade_inscritos_ead = quantidade_inscritos_ead;
-        this.quantidade_ingressantes_60_mais = quantidade_ingressantes_60_mais;
-        this.quantidade_matriculas = quantidade_matriculas;
-        this.quantidade_concluintes = quantidade_concluintes;
+        this.cbo_2002 = cbo_2002;
+        this.cbo_2002_descricao = cbo_2002_descricao;
+        this.cbo_2002_descricao_familia = cbo_2002_descricao_familia;
+        this.categoria = categoria;
+        this.grau_instrucao = grau_instrucao;
+        this.salario_mensal = salario_mensal;
     }
 
-    // Getters e Setters
     public Integer getAno() { return ano; }
     public void setAno(Integer ano) { this.ano = ano; }
 
     public String getSigla_uf() { return sigla_uf; }
     public void setSigla_uf(String sigla_uf) { this.sigla_uf = sigla_uf; }
 
-    public String getNome_curso_cine() { return nome_curso_cine; }
-    public void setNome_curso_cine(String nome_curso_cine) { this.nome_curso_cine = nome_curso_cine; }
+    public Integer getCbo_2002() { return cbo_2002; }
 
-    public String getNome_area_geral() { return nome_area_geral; }
-    public void setNome_area_geral(String nome_area_geral) { this.nome_area_geral = nome_area_geral; }
+    public void setCbo_2002(Integer cbo_2002) { this.cbo_2002 = cbo_2002;}
 
-    public Integer getQuantidade_vagas_processos_seletivos() { return quantidade_vagas_processos_seletivos; }
-    public void setQuantidade_vagas_processos_seletivos(Integer quantidade_vagas_processos_seletivos) {
-        this.quantidade_vagas_processos_seletivos = quantidade_vagas_processos_seletivos;
+    public String getcbo_2002_descricao() { return cbo_2002_descricao; }
+    public void setcbo_2002_descricao(String cbo_2002_descricao) { this.cbo_2002_descricao = cbo_2002_descricao; }
+
+    public String getcbo_2002_descricao_familia() { return cbo_2002_descricao_familia; }
+    public void setcbo_2002_descricao_familia(String cbo_2002_descricao_familia)
+    { this.cbo_2002_descricao_familia = cbo_2002_descricao_familia; }
+
+    public String getCategoria() {return categoria;}
+
+    public void setCategoria(String categoria) {this.categoria = categoria;}
+
+    public String getgrau_instrucao() { return grau_instrucao; }
+    public void setgrau_instrucao(String grau_instrucao) {
+        this.grau_instrucao = grau_instrucao;
     }
 
-    public Integer getQuantidade_inscritos() { return quantidade_inscritos; }
-    public void setQuantidade_inscritos(Integer quantidade_inscritos) {
-        this.quantidade_inscritos = quantidade_inscritos;
-    }
-
-    public Integer getQuantidade_inscritos_ead() { return quantidade_inscritos_ead; }
-    public void setQuantidade_inscritos_ead(Integer quantidade_inscritos_ead) {
-        this.quantidade_inscritos_ead = quantidade_inscritos_ead;
-    }
-
-    public Integer getQuantidade_ingressantes_60_mais() { return quantidade_ingressantes_60_mais; }
-    public void setQuantidade_ingressantes_60_mais(Integer quantidade_ingressantes_60_mais) {
-        this.quantidade_ingressantes_60_mais = quantidade_ingressantes_60_mais;
-    }
-
-    public Integer getQuantidade_matriculas() { return quantidade_matriculas; }
-    public void setQuantidade_matriculas(Integer quantidade_matriculas) {
-        this.quantidade_matriculas = quantidade_matriculas;
-    }
-
-    public Integer getQuantidade_concluintes() { return quantidade_concluintes; }
-    public void setQuantidade_concluintes(Integer quantidade_concluintes) {
-        this.quantidade_concluintes = quantidade_concluintes;
-    }
+    public Double getSalario_mensal() { return salario_mensal; }
+    public void setSalario_mensal(Double salario_mensal) { this.salario_mensal = salario_mensal; }
 }
 
