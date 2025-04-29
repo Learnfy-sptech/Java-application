@@ -1,6 +1,6 @@
 package com.learnfy.modelo;
 
-public class Curso {
+public class CursoOfertado {
 
     private Integer ano;
     private String siglaUf;
@@ -28,11 +28,11 @@ public class Curso {
     private Integer qtdIngressantesAtividadeExtra;
     private Integer qtdConcluintesAtividadeExtra;
 
-    public Curso() {
+    public CursoOfertado() {
 
     }
 
-    public Curso(Integer ano, String siglaUf, Integer idMunicipio, String rede, Integer idIes, String nomeCurso, String nomeArea, Integer grauAcademico, Integer modalidadeEnsino, Integer qtdVagas, Integer qtdVagasDiurno, Integer qtdVagasNoturno, Integer qtdVagasEad, Integer qtdIncritos, Integer qtdIncritosDiurno, Integer qtdIncritosNoturno, Integer qtdIncritosEad, Integer qtdConcluintesDiurno, Integer qtdConcluintesNoturno, Integer qtdIngressantesRedePublica, Integer qtdIngressantesRedePrivada, Integer qtdConcluintesRedePublica, Integer qtdConcluintesRedePrivada, Integer qtdIngressantesAtividadeExtra, Integer qtdConcluintesAtividadeExtra) {
+    public CursoOfertado(Integer ano, String siglaUf, Integer idMunicipio, String rede, Integer idIes, String nomeCurso, String nomeArea, Integer grauAcademico, Integer modalidadeEnsino, Integer qtdVagas, Integer qtdVagasDiurno, Integer qtdVagasNoturno, Integer qtdVagasEad, Integer qtdIncritos, Integer qtdIncritosDiurno, Integer qtdIncritosNoturno, Integer qtdIncritosEad, Integer qtdConcluintesDiurno, Integer qtdConcluintesNoturno, Integer qtdIngressantesRedePublica, Integer qtdIngressantesRedePrivada, Integer qtdConcluintesRedePublica, Integer qtdConcluintesRedePrivada, Integer qtdIngressantesAtividadeExtra, Integer qtdConcluintesAtividadeExtra) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.idMunicipio = idMunicipio;

@@ -1,6 +1,6 @@
 package com.learnfy.processador;
 
-import com.learnfy.modelo.Curso;
+import com.learnfy.modelo.CursoOfertado;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
@@ -15,17 +15,17 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.parsers.ParserConfigurationException;
+
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-public class ProcessadorCurso implements Processador {
+public class ProcessadorCursoOfertado implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final String bucketName;
 
-    public ProcessadorCurso(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorCursoOfertado(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
         this.bucketName = bucketName;
@@ -50,10 +50,10 @@ public class ProcessadorCurso implements Processador {
 
             DataFormatter formatter = new DataFormatter();
             final int BATCH_SIZE = 100;
-            List<Curso> batchCursos = new ArrayList<>(BATCH_SIZE);
+            List<CursoOfertado> batchCursoOfertados = new ArrayList<>(BATCH_SIZE);
 
             SheetContentsHandler handler = new SheetContentsHandler() {
-                private Curso curso;
+                private CursoOfertado curso;
                 private int currentCol = -1;
 
                 @Override
@@ -63,16 +63,16 @@ public class ProcessadorCurso implements Processador {
                         curso = null;
                         return;
                     }
-                    curso = new Curso();
+                    curso = new CursoOfertado();
                 }
 
                 @Override
                 public void endRow(int rowNum) {
                     if (curso != null) {
-                        batchCursos.add(curso);
-                        if (batchCursos.size() == BATCH_SIZE) {
-                            enviarBatch(batchCursos);
-                            batchCursos.clear();
+                        batchCursoOfertados.add(curso);
+                        if (batchCursoOfertados.size() == BATCH_SIZE) {
+                            enviarBatch(batchCursoOfertados);
+                            batchCursoOfertados.clear();
                         }
                     }
                 }
@@ -126,9 +126,9 @@ public class ProcessadorCurso implements Processador {
                 parser.parse(sheetSource);
             }
 
-            if (!batchCursos.isEmpty()) {
-                enviarBatch(batchCursos);
-                batchCursos.clear();
+            if (!batchCursoOfertados.isEmpty()) {
+                enviarBatch(batchCursoOfertados);
+                batchCursoOfertados.clear();
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
@@ -153,8 +153,8 @@ public class ProcessadorCurso implements Processador {
         return index - 1;
     }
 
-    private void enviarBatch(List<Curso> cursos) {
-        System.out.println("Inserindo " + cursos.size() + " registros no banco.");
+    private void enviarBatch(List<CursoOfertado> cursoOfertados) {
+        System.out.println("Inserindo " + cursoOfertados.size() + " registros no banco.");
 
         String sql = "INSERT INTO curso (\n" +
                 "    ano, sigla_uf, id_municipio, rede, id_ies, nome_curso, nome_area, grau_academico,\n" +
@@ -165,30 +165,30 @@ public class ProcessadorCurso implements Processador {
                 ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
-            jdbcTemplate.batchUpdate(sql, cursos, cursos.size(), (ps, curso) -> {
-                ps.setInt(1, curso.getAno() != null ? curso.getAno() : 0);
-                ps.setString(2, curso.getSiglaUf() != null ? curso.getSiglaUf() : "");
-                ps.setInt(3, curso.getIdMunicipio() != null ? curso.getIdMunicipio() : 0);
-                ps.setString(4, curso.getRede() != null ? curso.getRede() : "");
-                ps.setInt(5, curso.getIdIes() != null ? curso.getIdIes() : 0);
-                ps.setString(6, curso.getNomeCurso() != null ? curso.getNomeCurso() : "");
-                ps.setString(7, curso.getNomeArea() != null ? curso.getNomeArea() : "");
-                ps.setInt(8, curso.getGrauAcademico() != null ? curso.getGrauAcademico() : 0);
-                ps.setInt(9, curso.getModalidadeEnsino() != null ? curso.getModalidadeEnsino() : 0);
-                ps.setInt(10, curso.getQtdVagas() != null ? curso.getQtdVagas() : 0);
-                ps.setInt(11, curso.getQtdVagasDiurno() != null ? curso.getQtdVagasDiurno() : 0);
-                ps.setInt(12, curso.getQtdVagasNoturno() != null ? curso.getQtdVagasNoturno() : 0);
-                ps.setInt(13, curso.getQtdVagasEad() != null ? curso.getQtdVagasEad() : 0);
-                ps.setInt(14, curso.getQtdIncritos() != null ? curso.getQtdIncritos() : 0);
-                ps.setInt(15, curso.getQtdIncritosDiurno() != null ? curso.getQtdIncritosDiurno() : 0);
-                ps.setInt(16, curso.getQtdIncritosNoturno() != null ? curso.getQtdIncritosNoturno() : 0);
-                ps.setInt(17, curso.getQtdIncritosEad() != null ? curso.getQtdIncritosEad() : 0);
-                ps.setInt(18, curso.getQtdConcluintesDiurno() != null ? curso.getQtdConcluintesDiurno() : 0);
-                ps.setInt(19, curso.getQtdConcluintesNoturno() != null ? curso.getQtdConcluintesNoturno() : 0);
-                ps.setInt(20, curso.getQtdIngressantesRedePublica() != null ? curso.getQtdIngressantesRedePublica() : 0);
-                ps.setInt(21, curso.getQtdIngressantesRedePrivada() != null ? curso.getQtdIngressantesRedePrivada() : 0);
-                ps.setInt(22, curso.getQtdConcluintesRedePublica() != null ? curso.getQtdConcluintesRedePublica() : 0);
-                ps.setInt(23, curso.getQtdConcluintesRedePrivada() != null ? curso.getQtdConcluintesRedePrivada() : 0);
+            jdbcTemplate.batchUpdate(sql, cursoOfertados, cursoOfertados.size(), (ps, cursoOfertado) -> {
+                ps.setInt(1, cursoOfertado.getAno() != null ? cursoOfertado.getAno() : 0);
+                ps.setString(2, cursoOfertado.getSiglaUf() != null ? cursoOfertado.getSiglaUf() : "");
+                ps.setInt(3, cursoOfertado.getIdMunicipio() != null ? cursoOfertado.getIdMunicipio() : 0);
+                ps.setString(4, cursoOfertado.getRede() != null ? cursoOfertado.getRede() : "");
+                ps.setInt(5, cursoOfertado.getIdIes() != null ? cursoOfertado.getIdIes() : 0);
+                ps.setString(6, cursoOfertado.getNomeCurso() != null ? cursoOfertado.getNomeCurso() : "");
+                ps.setString(7, cursoOfertado.getNomeArea() != null ? cursoOfertado.getNomeArea() : "");
+                ps.setInt(8, cursoOfertado.getGrauAcademico() != null ? cursoOfertado.getGrauAcademico() : 0);
+                ps.setInt(9, cursoOfertado.getModalidadeEnsino() != null ? cursoOfertado.getModalidadeEnsino() : 0);
+                ps.setInt(10, cursoOfertado.getQtdVagas() != null ? cursoOfertado.getQtdVagas() : 0);
+                ps.setInt(11, cursoOfertado.getQtdVagasDiurno() != null ? cursoOfertado.getQtdVagasDiurno() : 0);
+                ps.setInt(12, cursoOfertado.getQtdVagasNoturno() != null ? cursoOfertado.getQtdVagasNoturno() : 0);
+                ps.setInt(13, cursoOfertado.getQtdVagasEad() != null ? cursoOfertado.getQtdVagasEad() : 0);
+                ps.setInt(14, cursoOfertado.getQtdIncritos() != null ? cursoOfertado.getQtdIncritos() : 0);
+                ps.setInt(15, cursoOfertado.getQtdIncritosDiurno() != null ? cursoOfertado.getQtdIncritosDiurno() : 0);
+                ps.setInt(16, cursoOfertado.getQtdIncritosNoturno() != null ? cursoOfertado.getQtdIncritosNoturno() : 0);
+                ps.setInt(17, cursoOfertado.getQtdIncritosEad() != null ? cursoOfertado.getQtdIncritosEad() : 0);
+                ps.setInt(18, cursoOfertado.getQtdConcluintesDiurno() != null ? cursoOfertado.getQtdConcluintesDiurno() : 0);
+                ps.setInt(19, cursoOfertado.getQtdConcluintesNoturno() != null ? cursoOfertado.getQtdConcluintesNoturno() : 0);
+                ps.setInt(20, cursoOfertado.getQtdIngressantesRedePublica() != null ? cursoOfertado.getQtdIngressantesRedePublica() : 0);
+                ps.setInt(21, cursoOfertado.getQtdIngressantesRedePrivada() != null ? cursoOfertado.getQtdIngressantesRedePrivada() : 0);
+                ps.setInt(22, cursoOfertado.getQtdConcluintesRedePublica() != null ? cursoOfertado.getQtdConcluintesRedePublica() : 0);
+                ps.setInt(23, cursoOfertado.getQtdConcluintesRedePrivada() != null ? cursoOfertado.getQtdConcluintesRedePrivada() : 0);
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
