@@ -1,9 +1,13 @@
 package com.learnfy.processador;
 
 import com.learnfy.modelo.Curso;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
+import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -11,6 +15,10 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 public class ProcessadorCurso implements Processador {
     private final JdbcTemplate jdbcTemplate;
@@ -32,40 +40,90 @@ public class ProcessadorCurso implements Processador {
                 .key(key)
                 .build())) {
 
-            Workbook workbook;
             if (key.endsWith(".xls")) {
-                workbook = new HSSFWorkbook(inputStream);
-            } else {
-                workbook = new XSSFWorkbook(inputStream);
+                throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
 
-            List<Curso> cursos = new ArrayList<>();
+            OPCPackage pkg = OPCPackage.open(inputStream);
+            XSSFReader reader = new XSSFReader(pkg);
+            ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
 
-            Sheet sheet = workbook.getSheetAt(0);
-            System.out.println("Planilha lida com sucesso. Processando linhas...");
-
+            DataFormatter formatter = new DataFormatter();
             final int BATCH_SIZE = 100;
             List<Curso> batchCursos = new ArrayList<>(BATCH_SIZE);
 
-            boolean primeiraLinha = true;
+            SheetContentsHandler handler = new SheetContentsHandler() {
+                private Curso curso;
+                private int currentCol = -1;
 
-            for (Row row : sheet) {
-                if (primeiraLinha) {
-                    primeiraLinha = false;
-                    continue;
-                }
-
-                try {
-                    Curso curso = extrairDados(row);
-                    batchCursos.add(curso);
-
-                    if (batchCursos.size() == BATCH_SIZE) {
-                        enviarBatch(batchCursos);
-                        batchCursos.clear();
+                @Override
+                public void startRow(int rowNum) {
+                    if (rowNum == 0) {
+                        // Ignora o cabeçalho
+                        curso = null;
+                        return;
                     }
-                } catch (Exception e) {
-                    System.err.println("Erro ao processar linha " + row.getRowNum() + ": " + e.getMessage());
+                    curso = new Curso();
                 }
+
+                @Override
+                public void endRow(int rowNum) {
+                    if (curso != null) {
+                        batchCursos.add(curso);
+                        if (batchCursos.size() == BATCH_SIZE) {
+                            enviarBatch(batchCursos);
+                            batchCursos.clear();
+                        }
+                    }
+                }
+
+                @Override
+                public void cell(String cellReference, String formattedValue, XSSFComment comment) {
+                    if (curso == null) return;
+                    String col = cellReference.replaceAll("\\d", "");
+                    currentCol = colunaParaIndice(col);
+
+                    switch (currentCol) {
+                        case 0 -> curso.setAno(parseInt(formattedValue));
+                        case 1 -> curso.setSiglaUf(formattedValue);
+                        case 2 -> curso.setIdMunicipio(parseInt(formattedValue));
+                        case 3 -> curso.setRede(formattedValue);
+                        case 4 -> curso.setIdIes(parseInt(formattedValue));
+                        case 5 -> curso.setNomeCurso(formattedValue);
+                        case 6 -> curso.setNomeArea(formattedValue);
+                        case 7 -> curso.setGrauAcademico(parseInt(formattedValue));
+                        case 8 -> curso.setModalidadeEnsino(parseInt(formattedValue));
+                        case 9 -> curso.setQtdVagas(parseInt(formattedValue));
+                        case 10 -> curso.setQtdVagasDiurno(parseInt(formattedValue));
+                        case 11 -> curso.setQtdVagasNoturno(parseInt(formattedValue));
+                        case 12 -> curso.setQtdVagasEad(parseInt(formattedValue));
+                        case 13 -> curso.setQtdIncritos(parseInt(formattedValue));
+                        case 14 -> curso.setQtdIncritosDiurno(parseInt(formattedValue));
+                        case 15 -> curso.setQtdIncritosNoturno(parseInt(formattedValue));
+                        case 16 -> curso.setQtdIncritosEad(parseInt(formattedValue));
+                        case 17 -> curso.setQtdConcluintesDiurno(parseInt(formattedValue));
+                        case 18 -> curso.setQtdConcluintesNoturno(parseInt(formattedValue));
+                        case 19 -> curso.setQtdIngressantesRedePublica(parseInt(formattedValue));
+                        case 20 -> curso.setQtdIngressantesRedePrivada(parseInt(formattedValue));
+                        case 21 -> curso.setQtdConcluintesRedePublica(parseInt(formattedValue));
+                        case 22 -> curso.setQtdConcluintesRedePrivada(parseInt(formattedValue));
+                    }
+                }
+
+                @Override
+                public void headerFooter(String text, boolean isHeader, String tagName) {
+                    // Ignorar cabeçalho e rodapé
+                }
+            };
+
+            XMLReader parser = XMLReaderFactory.createXMLReader();
+            XSSFSheetXMLHandler xmlHandler = new XSSFSheetXMLHandler(
+                    reader.getStylesTable(), null, strings, handler, formatter, false);
+            parser.setContentHandler(xmlHandler);
+
+            try (InputStream sheet = reader.getSheetsData().next()) {
+                InputSource sheetSource = new InputSource(sheet);
+                parser.parse(sheetSource);
             }
 
             if (!batchCursos.isEmpty()) {
@@ -73,55 +131,26 @@ public class ProcessadorCurso implements Processador {
                 batchCursos.clear();
             }
 
-            workbook.close();
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
         }
     }
 
-    private Curso extrairDados(Row row) {
-        Curso curso = new Curso();
+    private int parseInt(String value) {
         try {
-            for (Cell cell : row) {
-                switch (cell.getColumnIndex()) {
-                    case 0 -> curso.setAno((int) getNumericValue(cell));
-                    case 1 -> curso.setSiglaUf(getStringValue(cell));
-                    case 2 -> curso.setIdMunicipio((int) getNumericValue(cell));
-                    case 3 -> curso.setRede(getStringValue(cell));
-                    case 4 -> curso.setIdIes((int) getNumericValue(cell));
-                    case 5 -> curso.setNomeCurso(getStringValue(cell));
-                    case 6 -> curso.setNomeArea(getStringValue(cell));
-                    case 7 -> curso.setGrauAcademico((int) getNumericValue(cell));
-                    case 8 -> curso.setModalidadeEnsino((int) getNumericValue(cell));
-                    case 9 -> curso.setQtdVagas((int) getNumericValue(cell));
-                    case 10 -> curso.setQtdVagasDiurno((int) getNumericValue(cell));
-                    case 11 -> curso.setQtdVagasNoturno((int) getNumericValue(cell));
-                    case 12 -> curso.setQtdVagasEad((int) getNumericValue(cell));
-                    case 13 -> curso.setQtdIncritos((int) getNumericValue(cell));
-                    case 14 -> curso.setQtdIncritosDiurno((int) getNumericValue(cell));
-                    case 15 -> curso.setQtdIncritosNoturno((int) getNumericValue(cell));
-                    case 16 -> curso.setQtdIncritosEad((int) getNumericValue(cell));
-                    case 17 -> curso.setQtdConcluintesDiurno((int) getNumericValue(cell));
-                    case 18 -> curso.setQtdConcluintesNoturno((int) getNumericValue(cell));
-                    case 19 -> curso.setQtdIngressantesRedePublica((int) getNumericValue(cell));
-                    case 20 -> curso.setQtdIngressantesRedePrivada((int) getNumericValue(cell));
-                    case 21 -> curso.setQtdConcluintesRedePublica((int) getNumericValue(cell));
-                    case 22 -> curso.setQtdConcluintesRedePrivada((int) getNumericValue(cell));
-                }
-            }
+            return value != null && !value.isEmpty() ? (int) Double.parseDouble(value) : 0;
         } catch (Exception e) {
-            System.err.println("Erro ao extrair dados da linha: " + e.getMessage());
+            return 0;
         }
-        return curso;
     }
 
-    private double getNumericValue(Cell cell) {
-        return cell.getCellType() == CellType.NUMERIC ? cell.getNumericCellValue() : 0;
-    }
-
-    private String getStringValue(Cell cell) {
-        return cell.getCellType() == CellType.STRING ? cell.getStringCellValue() : "";
+    private int colunaParaIndice(String col) {
+        int index = 0;
+        for (char c : col.toCharArray()) {
+            index = index * 26 + (c - 'A' + 1);
+        }
+        return index - 1;
     }
 
     private void enviarBatch(List<Curso> cursos) {
@@ -133,7 +162,7 @@ public class ProcessadorCurso implements Processador {
                 "    qtd_inscritos, qtd_inscritos_diurno, qtd_inscritos_noturno, qtd_inscritos_ead,\n" +
                 "    qtd_concluintes_diurno, qtd_concluintes_noturno, qtd_ingressantes_rede_publica,\n" +
                 "    qtd_ingressantes_rede_privada, qtd_concluintes_rede_publica, qtd_concluintes_rede_privada\n" +
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n";
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
             jdbcTemplate.batchUpdate(sql, cursos, cursos.size(), (ps, curso) -> {
@@ -144,54 +173,22 @@ public class ProcessadorCurso implements Processador {
                 ps.setInt(5, curso.getIdIes() != null ? curso.getIdIes() : 0);
                 ps.setString(6, curso.getNomeCurso() != null ? curso.getNomeCurso() : "");
                 ps.setString(7, curso.getNomeArea() != null ? curso.getNomeArea() : "");
-
-                Integer grauAcademico = curso.getGrauAcademico();
-                ps.setInt(8, grauAcademico != null ? grauAcademico : 0);
-
-                Integer modalidadeEnsino = curso.getModalidadeEnsino();
-                ps.setInt(9, modalidadeEnsino != null ? modalidadeEnsino : 0);
-
-                Integer qtdVagas = curso.getQtdVagas();
-                ps.setInt(10, qtdVagas != null ? qtdVagas : 0);
-
-                Integer qtdVagasDiurno = curso.getQtdVagasDiurno();
-                ps.setInt(11, qtdVagasDiurno != null ? qtdVagasDiurno : 0);
-
-                Integer qtdVagasNoturno = curso.getQtdVagasNoturno();
-                ps.setInt(12, qtdVagasNoturno != null ? qtdVagasNoturno : 0);
-
-                Integer qtdVagasEad = curso.getQtdVagasEad();
-                ps.setInt(13, qtdVagasEad != null ? qtdVagasEad : 0);
-
-                Integer qtdIncritos = curso.getQtdIncritos();
-                ps.setInt(14, qtdIncritos != null ? qtdIncritos : 0);
-
-                Integer qtdIncritosDiurno = curso.getQtdIncritosDiurno();
-                ps.setInt(15, qtdIncritosDiurno != null ? qtdIncritosDiurno : 0);
-
-                Integer qtdIncritosNoturno = curso.getQtdIncritosNoturno();
-                ps.setInt(16, qtdIncritosNoturno != null ? qtdIncritosNoturno : 0);
-
-                Integer qtdIncritosEad = curso.getQtdIncritosEad();
-                ps.setInt(17, qtdIncritosEad != null ? qtdIncritosEad : 0);
-
-                Integer qtdConcluintesDiurno = curso.getQtdConcluintesDiurno();
-                ps.setInt(18, qtdConcluintesDiurno != null ? qtdConcluintesDiurno : 0);
-
-                Integer qtdConcluintesNoturno = curso.getQtdConcluintesNoturno();
-                ps.setInt(19, qtdConcluintesNoturno != null ? qtdConcluintesNoturno : 0);
-
-                Integer qtdIngressantesRedePublica = curso.getQtdIngressantesRedePublica();
-                ps.setInt(20, qtdIngressantesRedePublica != null ? qtdIngressantesRedePublica : 0);
-
-                Integer qtdIngressantesRedePrivada = curso.getQtdIngressantesRedePrivada();
-                ps.setInt(21, qtdIngressantesRedePrivada != null ? qtdIngressantesRedePrivada : 0);
-
-                Integer qtdConcluintesRedePublica = curso.getQtdConcluintesRedePublica();
-                ps.setInt(22, qtdConcluintesRedePublica != null ? qtdConcluintesRedePublica : 0);
-
-                Integer qtdConcluintesRedePrivada = curso.getQtdConcluintesRedePrivada();
-                ps.setInt(23, qtdConcluintesRedePrivada != null ? qtdConcluintesRedePrivada : 0);
+                ps.setInt(8, curso.getGrauAcademico() != null ? curso.getGrauAcademico() : 0);
+                ps.setInt(9, curso.getModalidadeEnsino() != null ? curso.getModalidadeEnsino() : 0);
+                ps.setInt(10, curso.getQtdVagas() != null ? curso.getQtdVagas() : 0);
+                ps.setInt(11, curso.getQtdVagasDiurno() != null ? curso.getQtdVagasDiurno() : 0);
+                ps.setInt(12, curso.getQtdVagasNoturno() != null ? curso.getQtdVagasNoturno() : 0);
+                ps.setInt(13, curso.getQtdVagasEad() != null ? curso.getQtdVagasEad() : 0);
+                ps.setInt(14, curso.getQtdIncritos() != null ? curso.getQtdIncritos() : 0);
+                ps.setInt(15, curso.getQtdIncritosDiurno() != null ? curso.getQtdIncritosDiurno() : 0);
+                ps.setInt(16, curso.getQtdIncritosNoturno() != null ? curso.getQtdIncritosNoturno() : 0);
+                ps.setInt(17, curso.getQtdIncritosEad() != null ? curso.getQtdIncritosEad() : 0);
+                ps.setInt(18, curso.getQtdConcluintesDiurno() != null ? curso.getQtdConcluintesDiurno() : 0);
+                ps.setInt(19, curso.getQtdConcluintesNoturno() != null ? curso.getQtdConcluintesNoturno() : 0);
+                ps.setInt(20, curso.getQtdIngressantesRedePublica() != null ? curso.getQtdIngressantesRedePublica() : 0);
+                ps.setInt(21, curso.getQtdIngressantesRedePrivada() != null ? curso.getQtdIngressantesRedePrivada() : 0);
+                ps.setInt(22, curso.getQtdConcluintesRedePublica() != null ? curso.getQtdConcluintesRedePublica() : 0);
+                ps.setInt(23, curso.getQtdConcluintesRedePrivada() != null ? curso.getQtdConcluintesRedePrivada() : 0);
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());

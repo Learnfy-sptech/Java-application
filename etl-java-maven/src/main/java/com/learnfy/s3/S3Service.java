@@ -2,6 +2,7 @@ package com.learnfy.s3;
 
 import com.learnfy.ConfigLoader;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -21,9 +22,10 @@ public class S3Service {
     public static S3Client criarS3Client() {
         String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
         String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
+        String sessionToken = ConfigLoader.get("AWS_SESSION_TOKEN");
         String regionName = ConfigLoader.get("AWS_REGION");
 
-        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        AwsSessionCredentials credentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken);
 
         return S3Client.builder()
                 .region(Region.of(regionName))

@@ -41,7 +41,7 @@ public class ProcessadorEmpregabilidade implements Processador {
             Sheet sheet = workbook.getSheetAt(0);
             System.out.println("Planilha lida com sucesso. Processando linhas...");
 
-            final int BATCH_SIZE = 100;
+            final int BATCH_SIZE = 300;
             List<Empregabilidade> batchEmpregabilidade = new ArrayList<>(BATCH_SIZE);
 
             boolean primeiraLinha = true;

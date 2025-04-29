@@ -11,7 +11,7 @@ import com.learnfy.s3.S3Service;
 public class Main {
     public static void main(String[] args) throws Exception {
         String bucket = ConfigLoader.get("S3_BUCKET");
-        S3Client s3Client = S3Client.create();
+        S3Client s3Client = S3Service.criarS3Client();
         String prefixo = "planilhas/";
 
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();

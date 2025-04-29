@@ -23,7 +23,7 @@ public class ConfigLoader {
     public static String get(String chave) {
         String valor = System.getenv(chave.toUpperCase());
         if (valor != null && !valor.isBlank()) {
-            System.out.println("Valor da variável de ambiente " + chave + ": " + valor); // Log
+            System.out.println("Valor da variável de ambiente " + chave + ": " + valor);
             return valor;
         }
 
