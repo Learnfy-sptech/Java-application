@@ -20,6 +20,7 @@ public class S3Service {
     private static final S3Client s3Client = criarS3Client();
 
     public static S3Client criarS3Client() {
+        // Coletando o valor referente as variáveis de ambiente
         String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
         String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
         String sessionToken = ConfigLoader.get("AWS_SESSION_TOKEN");
@@ -27,6 +28,7 @@ public class S3Service {
 
         AwsSessionCredentials credentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken);
 
+        // Construindo a conexão a partir dos atributos
         return S3Client.builder()
                 .region(Region.of(regionName))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))

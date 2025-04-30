@@ -156,7 +156,7 @@ public class ProcessadorCursoOfertado implements Processador {
     private void enviarBatch(List<CursoOfertado> cursoOfertados) {
         System.out.println("Inserindo " + cursoOfertados.size() + " registros no banco.");
 
-        String sql = "INSERT INTO curso (\n" +
+        String sql = "INSERT INTO curso_ies (\n" +
                 "    ano, sigla_uf, id_municipio, rede, id_ies, nome_curso, nome_area, grau_academico,\n" +
                 "    modalidade_ensino, qtd_vagas, qtd_vagas_diurno, qtd_vagas_noturno, qtd_vagas_ead,\n" +
                 "    qtd_inscritos, qtd_inscritos_diurno, qtd_inscritos_noturno, qtd_inscritos_ead,\n" +

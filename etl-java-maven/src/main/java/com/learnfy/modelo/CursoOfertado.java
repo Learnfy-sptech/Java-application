@@ -2,14 +2,11 @@ package com.learnfy.modelo;
 
 public class CursoOfertado {
 
-    private Integer ano;
-    private String siglaUf;
-    private Integer idMunicipio;
-    private String rede;
-    private Integer idIes;
+    private Integer fkIes;
+    private Integer fkCurso;
+    private String nomeIes;
     private String nomeCurso;
-    private String nomeArea;
-    private Integer grauAcademico;
+    private Integer ano;
     private Integer modalidadeEnsino;
     private Integer qtdVagas;
     private Integer qtdVagasDiurno;
@@ -25,79 +22,32 @@ public class CursoOfertado {
     private Integer qtdIngressantesRedePrivada;
     private Integer qtdConcluintesRedePublica;
     private Integer qtdConcluintesRedePrivada;
-    private Integer qtdIngressantesAtividadeExtra;
-    private Integer qtdConcluintesAtividadeExtra;
 
     public CursoOfertado() {
-
     }
 
-    public CursoOfertado(Integer ano, String siglaUf, Integer idMunicipio, String rede, Integer idIes, String nomeCurso, String nomeArea, Integer grauAcademico, Integer modalidadeEnsino, Integer qtdVagas, Integer qtdVagasDiurno, Integer qtdVagasNoturno, Integer qtdVagasEad, Integer qtdIncritos, Integer qtdIncritosDiurno, Integer qtdIncritosNoturno, Integer qtdIncritosEad, Integer qtdConcluintesDiurno, Integer qtdConcluintesNoturno, Integer qtdIngressantesRedePublica, Integer qtdIngressantesRedePrivada, Integer qtdConcluintesRedePublica, Integer qtdConcluintesRedePrivada, Integer qtdIngressantesAtividadeExtra, Integer qtdConcluintesAtividadeExtra) {
-        this.ano = ano;
-        this.siglaUf = siglaUf;
-        this.idMunicipio = idMunicipio;
-        this.rede = rede;
-        this.idIes = idIes;
-        this.nomeCurso = nomeCurso;
-        this.nomeArea = nomeArea;
-        this.grauAcademico = grauAcademico;
-        this.modalidadeEnsino = modalidadeEnsino;
-        this.qtdVagas = qtdVagas;
-        this.qtdVagasDiurno = qtdVagasDiurno;
-        this.qtdVagasNoturno = qtdVagasNoturno;
-        this.qtdVagasEad = qtdVagasEad;
-        this.qtdIncritos = qtdIncritos;
-        this.qtdIncritosDiurno = qtdIncritosDiurno;
-        this.qtdIncritosNoturno = qtdIncritosNoturno;
-        this.qtdIncritosEad = qtdIncritosEad;
-        this.qtdConcluintesDiurno = qtdConcluintesDiurno;
-        this.qtdConcluintesNoturno = qtdConcluintesNoturno;
-        this.qtdIngressantesRedePublica = qtdIngressantesRedePublica;
-        this.qtdIngressantesRedePrivada = qtdIngressantesRedePrivada;
-        this.qtdConcluintesRedePublica = qtdConcluintesRedePublica;
-        this.qtdConcluintesRedePrivada = qtdConcluintesRedePrivada;
-        this.qtdIngressantesAtividadeExtra = qtdIngressantesAtividadeExtra;
-        this.qtdConcluintesAtividadeExtra = qtdConcluintesAtividadeExtra;
+    public Integer getFkIes() {
+        return fkIes;
     }
 
-    public Integer getAno() {
-        return ano;
+    public void setFkIes(Integer fkIes) {
+        this.fkIes = fkIes;
     }
 
-    public void setAno(Integer ano) {
-        this.ano = ano;
+    public Integer getFkCurso() {
+        return fkCurso;
     }
 
-    public String getSiglaUf() {
-        return siglaUf;
+    public void setFkCurso(Integer fkCurso) {
+        this.fkCurso = fkCurso;
     }
 
-    public void setSiglaUf(String siglaUf) {
-        this.siglaUf = siglaUf;
+    public String getNomeIes() {
+        return nomeIes;
     }
 
-    public Integer getIdMunicipio() {
-        return idMunicipio;
-    }
-
-    public void setIdMunicipio(Integer idMunicipio) {
-        this.idMunicipio = idMunicipio;
-    }
-
-    public String getRede() {
-        return rede;
-    }
-
-    public void setRede(String rede) {
-        this.rede = rede;
-    }
-
-    public Integer getIdIes() {
-        return idIes;
-    }
-
-    public void setIdIes(Integer idIes) {
-        this.idIes = idIes;
+    public void setNomeIes(String nomeIes) {
+        this.nomeIes = nomeIes;
     }
 
     public String getNomeCurso() {
@@ -108,20 +58,12 @@ public class CursoOfertado {
         this.nomeCurso = nomeCurso;
     }
 
-    public String getNomeArea() {
-        return nomeArea;
+    public Integer getAno() {
+        return ano;
     }
 
-    public void setNomeArea(String nomeArea) {
-        this.nomeArea = nomeArea;
-    }
-
-    public Integer getGrauAcademico() {
-        return grauAcademico;
-    }
-
-    public void setGrauAcademico(Integer grauAcademico) {
-        this.grauAcademico = grauAcademico;
+    public void setAno(Integer ano) {
+        this.ano = ano;
     }
 
     public Integer getModalidadeEnsino() {
@@ -244,33 +186,10 @@ public class CursoOfertado {
         this.qtdConcluintesRedePrivada = qtdConcluintesRedePrivada;
     }
 
-    public Integer getQtdIngressantesAtividadeExtra() {
-        return qtdIngressantesAtividadeExtra;
-    }
-
-    public void setQtdIngressantesAtividadeExtra(Integer qtdIngressantesAtividadeExtra) {
-        this.qtdIngressantesAtividadeExtra = qtdIngressantesAtividadeExtra;
-    }
-
-    public Integer getQtdConcluintesAtividadeExtra() {
-        return qtdConcluintesAtividadeExtra;
-    }
-
-    public void setQtdConcluintesAtividadeExtra(Integer qtdConcluintesAtividadeExtra) {
-        this.qtdConcluintesAtividadeExtra = qtdConcluintesAtividadeExtra;
-    }
-
     @Override
     public String toString() {
         return "Curso{" +
                 "ano=" + ano +
-                ", siglaUf='" + siglaUf + '\'' +
-                ", idMunicipio=" + idMunicipio +
-                ", rede='" + rede + '\'' +
-                ", idIes=" + idIes +
-                ", nomeCurso='" + nomeCurso + '\'' +
-                ", nomeArea='" + nomeArea + '\'' +
-                ", grauAcademico=" + grauAcademico +
                 ", modalidadeEnsino=" + modalidadeEnsino +
                 ", qtdVagas=" + qtdVagas +
                 ", qtdVagasDiurno=" + qtdVagasDiurno +
@@ -286,8 +205,6 @@ public class CursoOfertado {
                 ", qtdIngressantesRedePrivada=" + qtdIngressantesRedePrivada +
                 ", qtdConcluintesRedePublica=" + qtdConcluintesRedePublica +
                 ", qtdConcluintesRedePrivada=" + qtdConcluintesRedePrivada +
-                ", qtdIngressantesAtividadeExtra=" + qtdIngressantesAtividadeExtra +
-                ", qtdConcluintesAtividadeExtra=" + qtdConcluintesAtividadeExtra +
                 '}';
     }
 }
