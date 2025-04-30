@@ -1,7 +1,8 @@
 package com.learnfy.processador;
 
+import com.learnfy.modelo.Area;
+import com.learnfy.modelo.Curso;
 import com.learnfy.modelo.Ies;
-import com.learnfy.modelo.Municipio;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -9,6 +10,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -20,12 +22,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessadorMunicipio implements Processador {
+public class ProcessadorCursoArea implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final String bucketName;
 
-    public ProcessadorMunicipio(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorCursoArea(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
         this.bucketName = bucketName;
@@ -50,53 +52,63 @@ public class ProcessadorMunicipio implements Processador {
 
             DataFormatter formatter = new DataFormatter();
             final int BATCH_SIZE = 100;
-            List<Municipio> batchMunicipio = new ArrayList<>(BATCH_SIZE);
+            List<Curso> batchCurso = new ArrayList<>(BATCH_SIZE);
 
             SheetContentsHandler handler = new SheetContentsHandler() {
-                private Municipio municipio;
+                private Curso curso;
+                private Area area;
 
                 @Override
                 public void startRow(int rowNum) {
                     if (rowNum == 0) {
-                        municipio = null; // Ignora cabeçalho
+                        curso = null; // Ignora cabeçalho
+                        area = null;
                         return;
                     }
-                    municipio = new Municipio();
+                    curso = new Curso();
+                    area = new Area();
                 }
 
                 @Override
                 public void endRow(int rowNum) {
-                    if (municipio != null) {
+                    if (curso != null && area != null) {
 
                         try {
-                            Integer fkUf = jdbcTemplate.queryForObject(
-                                    "SELECT id_uf FROM uf_tb WHERE sigla = ?",
-                                    Integer.class,
-                                    municipio.getSiglaUf()
+                            List<Integer> idArea = jdbcTemplate.query(
+                                    "SELECT id_area FROM area_tb WHERE nome = ?",
+                                    new BeanPropertyRowMapper<Integer>(),
+                                    area.getNome()
                             );
-                            municipio.setFkUf(fkUf);
+                            if (idArea.isEmpty()) {
+                                Integer fkArea = jdbcTemplate.update(
+                                        "INSERT INTO area_tb (nome) VALUES (?)",
+                                        area.getNome()
+                                );
+                                curso.setFkArea(fkArea);
+                            }
                         } catch (Exception e) {
-                            System.out.println(String.format("Não foi possível obter a chave estrangeira do estado %s", municipio.getNome()));
+                            System.out.println(String.format("Não foi possível obter a chave estrangeira da área %s", area.getNome()));
                         }
-                        batchMunicipio.add(municipio);
-                        if (batchMunicipio.size() == BATCH_SIZE) {
-                            enviarBatch(batchMunicipio);
-                            batchMunicipio.clear();
+
+                        batchCurso.add(curso);
+                        if (batchCurso.size() == BATCH_SIZE) {
+                            enviarBatchCurso(batchCurso);
+                            batchCurso.clear();
                         }
                     }
                 }
 
                 @Override
                 public void cell(String cellReference, String formattedValue, XSSFComment comment) {
-                    if (municipio == null) return;
+                    if (curso == null && area == null) return;
                     String col = cellReference.replaceAll("\\d", "");
                     int currentCol = colunaParaIndice(col);
 
                     formattedValue = formattedValue.trim();
 
                     switch (currentCol) {
-                        case 0 -> municipio.setNome(formattedValue);
-                        case 1 -> municipio.setSiglaUf(formattedValue);
+                        case 0 -> curso.setNomeCurso(formattedValue);
+                        case 1 -> curso.setGrauAcademico(parseInt(formattedValue));
                     }
                 }
 
@@ -116,14 +128,22 @@ public class ProcessadorMunicipio implements Processador {
                 parser.parse(sheetSource);
             }
 
-            if (!batchMunicipio.isEmpty()) {
-                enviarBatch(batchMunicipio);
-                batchMunicipio.clear();
+            if (!batchCurso.isEmpty()) {
+                enviarBatchCurso(batchCurso);
+                batchCurso.clear();
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+        }
+    }
+
+    private int parseInt(String value) {
+        try {
+            return value != null && !value.isEmpty() ? (int) Double.parseDouble(value) : 0;
+        } catch (Exception e) {
+            return 0;
         }
     }
 
@@ -135,15 +155,32 @@ public class ProcessadorMunicipio implements Processador {
         return index - 1;
     }
 
-    private void enviarBatch(List<Municipio> municipios) {
-        System.out.println("Inserindo " + municipios.size() + " registros no banco.");
+    private void enviarBatchCurso(List<Curso> cursoList) {
+        System.out.println("Inserindo " + cursoList.size() + " registros no banco.");
 
-        String sql = "INSERT INTO municipio_tb (nome, fk_uf) VALUES (?, ?)";
+        String sqlCurso = "INSERT INTO curso_tb (fk_area, nome, grau_academico) VALUES (?, ?, ?)";
 
         try {
-            jdbcTemplate.batchUpdate(sql, municipios, municipios.size(), (ps, municipio) -> {
-                ps.setString(1, municipio.getNome() != null ? municipio.getNome() : "");
-                ps.setInt(2, municipio.getFkUf());
+            jdbcTemplate.batchUpdate(sqlCurso, cursoList, cursoList.size(), (ps, curso) -> {
+                ps.setInt(1, curso.getFkArea());
+                ps.setString(2, curso.getNomeCurso() != null ? curso.getNomeCurso() : "");
+                ps.setInt(3, curso.getGrauAcademico() != null ? curso.getGrauAcademico() : 0);
+            });
+        } catch (Exception e) {
+            System.err.println("Erro ao inserir batch: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    private void enviarBatchArea(List<Area> areaList) {
+        System.out.println("Inserindo " + areaList.size() + " registros no banco.");
+
+        String sqlCurso = "INSERT INTO area_tb (nome) VALUES (?)";
+
+        try {
+            jdbcTemplate.batchUpdate(sqlCurso, areaList, areaList.size(), (ps, area) -> {
+                ps.setString(1, area.getNome());
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());

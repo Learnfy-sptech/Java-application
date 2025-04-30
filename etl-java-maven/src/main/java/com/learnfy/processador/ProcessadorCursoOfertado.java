@@ -99,6 +99,8 @@ public class ProcessadorCursoOfertado implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     currentCol = colunaParaIndice(col);
 
+                    formattedValue = formattedValue.trim();
+
                     switch (currentCol) {
                         case 0 -> curso.setAno(parseInt(formattedValue));
                         case 1 -> curso.setNomeIes(formattedValue); // Para depois buscar a fkIes

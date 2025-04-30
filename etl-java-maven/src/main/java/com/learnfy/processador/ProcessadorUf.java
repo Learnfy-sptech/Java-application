@@ -80,6 +80,8 @@ public class ProcessadorUf implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     int currentCol = colunaParaIndice(col);
 
+                    formattedValue = formattedValue.trim();
+
                     switch (currentCol) {
                         case 0 -> uf.setSigla(formattedValue);
                         case 1 -> uf.setNome(formattedValue);

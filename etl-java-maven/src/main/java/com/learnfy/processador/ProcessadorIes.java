@@ -93,6 +93,8 @@ public class ProcessadorIes implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     int currentCol = colunaParaIndice(col);
 
+                    formattedValue = formattedValue.trim();
+
                     switch (currentCol) {
                         case 0 -> ies.setNome(formattedValue);
                         case 1 -> {
