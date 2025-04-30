@@ -4,8 +4,8 @@ public class CursoOfertado {
 
     private Integer fkIes;
     private Integer fkCurso;
-    private String nomeIes;
-    private String nomeCurso;
+    private String nomeIes; // Apenas para realizar a busca da fk
+    private String nomeCurso; // Apenas para realizar a busca da fk
     private Integer ano;
     private Integer modalidadeEnsino;
     private Integer qtdVagas;
@@ -16,6 +16,7 @@ public class CursoOfertado {
     private Integer qtdIncritosDiurno;
     private Integer qtdIncritosNoturno;
     private Integer qtdIncritosEad;
+    private Integer qtdConcluintes;
     private Integer qtdConcluintesDiurno;
     private Integer qtdConcluintesNoturno;
     private Integer qtdIngressantesRedePublica;
@@ -28,6 +29,14 @@ public class CursoOfertado {
 
     public Integer getFkIes() {
         return fkIes;
+    }
+
+    public Integer getQtdConcluintes() {
+        return qtdConcluintes;
+    }
+
+    public void setQtdConcluintes(Integer qtdConcluintes) {
+        this.qtdConcluintes = qtdConcluintes;
     }
 
     public void setFkIes(Integer fkIes) {
