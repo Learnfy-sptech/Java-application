@@ -9,7 +9,6 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.usermodel.XSSFComment;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -18,8 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ProcessadorCursoArea implements Processador {
     private final JdbcTemplate jdbcTemplate;
@@ -46,10 +44,16 @@ public class ProcessadorCursoArea implements Processador {
             OPCPackage pkg = OPCPackage.open(inputStream);
             XSSFReader reader = new XSSFReader(pkg);
             ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
-
             DataFormatter formatter = new DataFormatter();
+
             final int BATCH_SIZE = 100;
             List<Curso> batchCurso = new ArrayList<>(BATCH_SIZE);
+
+            // Carrega todas as áreas existentes no banco e as coloca em um Map
+            Map<String, Integer> areasCadastradas = new HashMap<>();
+            jdbcTemplate.query("SELECT id_area, nome FROM area_tb", rs -> {
+                areasCadastradas.put(rs.getString("nome").trim().toLowerCase(), rs.getInt("id_area"));
+            });
 
             SheetContentsHandler handler = new SheetContentsHandler() {
                 private Curso curso;
@@ -58,7 +62,7 @@ public class ProcessadorCursoArea implements Processador {
                 @Override
                 public void startRow(int rowNum) {
                     if (rowNum == 0) {
-                        curso = null; // Ignora cabeçalho
+                        curso = null;
                         area = null;
                         return;
                     }
@@ -69,22 +73,15 @@ public class ProcessadorCursoArea implements Processador {
                 @Override
                 public void endRow(int rowNum) {
                     if (curso != null && area != null) {
+                        String nomeArea = area.getNome().trim().toLowerCase();
 
-                        try {
-                            List<Integer> idArea = jdbcTemplate.query(
-                                    "SELECT id_area FROM area_tb WHERE nome = ?",
-                                    new BeanPropertyRowMapper<Integer>(),
-                                    area.getNome()
-                            );
-                            if (idArea.isEmpty()) {
-                                Integer fkArea = jdbcTemplate.update(
-                                        "INSERT INTO area_tb (nome) VALUES (?)",
-                                        area.getNome()
-                                );
-                                curso.setFkArea(fkArea);
-                            }
-                        } catch (Exception e) {
-                            System.out.println(String.format("Não foi possível obter a chave estrangeira da área %s", area.getNome()));
+                        if (!areasCadastradas.containsKey(nomeArea)) {
+                            jdbcTemplate.update("INSERT INTO area_tb (nome) VALUES (?)", area.getNome());
+                            Integer idArea = jdbcTemplate.queryForObject("SELECT id_area FROM area_tb WHERE nome = ?", Integer.class, area.getNome());
+                            areasCadastradas.put(nomeArea, idArea);
+                            curso.setFkArea(idArea);
+                        } else {
+                            curso.setFkArea(areasCadastradas.get(nomeArea));
                         }
 
                         batchCurso.add(curso);
@@ -106,6 +103,7 @@ public class ProcessadorCursoArea implements Processador {
                     switch (currentCol) {
                         case 0 -> curso.setNomeCurso(formattedValue);
                         case 1 -> curso.setGrauAcademico(parseInt(formattedValue));
+                        case 2 -> area.setNome(formattedValue);
                     }
                 }
 
@@ -162,22 +160,6 @@ public class ProcessadorCursoArea implements Processador {
                 ps.setInt(1, curso.getFkArea());
                 ps.setString(2, curso.getNomeCurso() != null ? curso.getNomeCurso() : "");
                 ps.setInt(3, curso.getGrauAcademico() != null ? curso.getGrauAcademico() : 0);
-            });
-        } catch (Exception e) {
-            System.err.println("Erro ao inserir batch: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    private void enviarBatchArea(List<Area> areaList) {
-        System.out.println("Inserindo " + areaList.size() + " registros no banco.");
-
-        String sqlCurso = "INSERT INTO area_tb (nome) VALUES (?)";
-
-        try {
-            jdbcTemplate.batchUpdate(sqlCurso, areaList, areaList.size(), (ps, area) -> {
-                ps.setString(1, area.getNome());
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());

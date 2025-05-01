@@ -21,7 +21,7 @@ public class Main {
         Altere o valor dessa variável para false caso seja a
         primeira inserção ou queira inserir todos os dados novamente
          */
-        Boolean primeiravez = false;
+        Boolean primeiravez = true;
 
         if (primeiravez) {
             inserirDadosEscolaridade(jdbcTemplate, s3Client, bucket);

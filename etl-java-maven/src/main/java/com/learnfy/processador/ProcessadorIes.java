@@ -1,7 +1,6 @@
 package com.learnfy.processador;
 
 import com.learnfy.modelo.Ies;
-import com.learnfy.modelo.Uf;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -17,8 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ProcessadorIes implements Processador {
     private final JdbcTemplate jdbcTemplate;
@@ -41,6 +39,9 @@ public class ProcessadorIes implements Processador {
             if (key.endsWith(".xls")) {
                 throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
+
+            // 🔄 Carrega cache de municípios uma vez
+            Map<String, Integer> cacheMunicipios = carregarMunicipios();
 
             OPCPackage pkg = OPCPackage.open(inputStream);
             XSSFReader reader = new XSSFReader(pkg);
@@ -65,15 +66,10 @@ public class ProcessadorIes implements Processador {
                 @Override
                 public void endRow(int rowNum) {
                     if (ies != null) {
-
-                        try {
-                            Integer fkMunicipio = jdbcTemplate.queryForObject(
-                                    "SELECT id_municipio FROM municipio_tb WHERE nome = ?",
-                                    Integer.class,
-                                    ies.getNomeMunicipio()
-                            );
+                        Integer fkMunicipio = cacheMunicipios.get(ies.getNomeMunicipio());
+                        if (fkMunicipio != null) {
                             ies.setFkMunicipio(fkMunicipio);
-                        } catch (Exception e) {
+                        } else {
                             System.out.println(String.format("Não foi possível obter a chave estrangeira do município %s", ies.getNomeMunicipio()));
                         }
 
@@ -96,8 +92,8 @@ public class ProcessadorIes implements Processador {
                     switch (currentCol) {
                         case 0 -> ies.setNome(formattedValue);
                         case 1 -> {
-                            if (formattedValue.equals("Privada")) ies.setRedePublica(false);
-                            else ies.setRedePublica(true);
+                            if (formattedValue.equals("Privada")) ies.setRedePublica(0);
+                            else ies.setRedePublica(1);
                         }
                         case 2 -> ies.setNomeMunicipio(formattedValue);
                     }
@@ -146,7 +142,7 @@ public class ProcessadorIes implements Processador {
         try {
             jdbcTemplate.batchUpdate(sql, iesList, iesList.size(), (ps, ies) -> {
                 ps.setInt(1, ies.getFkMunicipio());
-                ps.setString(2, ies.getRedePublica() != null ? ies.getNome() : "");
+                ps.setInt(2, ies.getRedePublica());
                 ps.setString(3, ies.getNome() != null ? ies.getNome() : "");
             });
         } catch (Exception e) {
@@ -154,5 +150,20 @@ public class ProcessadorIes implements Processador {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    private Map<String, Integer> carregarMunicipios() {
+        System.out.println("📥 Carregando cache de municípios...");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id_municipio, nome FROM municipio_tb");
+
+        Map<String, Integer> cache = new HashMap<>();
+        for (Map<String, Object> row : rows) {
+            String nome = (String) row.get("nome");
+            Integer id = (Integer) row.get("id_municipio");
+            cache.put(nome, id);
+        }
+
+        System.out.println("✔ Cache de municípios carregado com " + cache.size() + " entradas.");
+        return cache;
     }
 }

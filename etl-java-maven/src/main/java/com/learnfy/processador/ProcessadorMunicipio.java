@@ -1,6 +1,5 @@
 package com.learnfy.processador;
 
-import com.learnfy.modelo.Ies;
 import com.learnfy.modelo.Municipio;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -17,8 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ProcessadorMunicipio implements Processador {
     private final JdbcTemplate jdbcTemplate;
@@ -41,6 +39,9 @@ public class ProcessadorMunicipio implements Processador {
             if (key.endsWith(".xls")) {
                 throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
+
+            // ⚡ Carrega o cache de UFs uma vez
+            Map<String, Integer> cacheUf = carregarUfs();
 
             OPCPackage pkg = OPCPackage.open(inputStream);
             XSSFReader reader = new XSSFReader(pkg);
@@ -65,21 +66,16 @@ public class ProcessadorMunicipio implements Processador {
                 @Override
                 public void endRow(int rowNum) {
                     if (municipio != null) {
-
-                        try {
-                            Integer fkUf = jdbcTemplate.queryForObject(
-                                    "SELECT id_uf FROM uf_tb WHERE sigla = ?",
-                                    Integer.class,
-                                    municipio.getSiglaUf()
-                            );
+                        Integer fkUf = cacheUf.get(municipio.getSiglaUf());
+                        if (fkUf != null) {
                             municipio.setFkUf(fkUf);
-                        } catch (Exception e) {
-                            System.out.println(String.format("Não foi possível obter a chave estrangeira do estado %s", municipio.getNome()));
-                        }
-                        batchMunicipio.add(municipio);
-                        if (batchMunicipio.size() == BATCH_SIZE) {
-                            enviarBatch(batchMunicipio);
-                            batchMunicipio.clear();
+                            batchMunicipio.add(municipio);
+                            if (batchMunicipio.size() == BATCH_SIZE) {
+                                enviarBatch(batchMunicipio);
+                                batchMunicipio.clear();
+                            }
+                        } else {
+                            System.out.printf("⚠ UF não encontrada para sigla: %s (linha %d)%n", municipio.getSiglaUf(), rowNum);
                         }
                     }
                 }
@@ -122,6 +118,7 @@ public class ProcessadorMunicipio implements Processador {
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -148,5 +145,20 @@ public class ProcessadorMunicipio implements Processador {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    private Map<String, Integer> carregarUfs() {
+        System.out.println("Carregando cache de Ufs...");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id_uf, sigla FROM uf_tb");
+
+        Map<String, Integer> cache = new HashMap<>();
+        for (Map<String, Object> row : rows) {
+            String sigla = (String) row.get("sigla");
+            Integer id = (Integer) row.get("id_uf");
+            cache.put(sigla, id);
+        }
+
+        System.out.println("✔ Cache de UFs carregado com " + cache.size() + " entradas.");
+        return cache;
     }
 }
