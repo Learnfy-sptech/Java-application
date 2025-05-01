@@ -1,6 +1,9 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.modelo.Municipio;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -142,8 +145,6 @@ public class ProcessadorMunicipio implements Processador {
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
         }
     }
 
@@ -157,8 +158,20 @@ public class ProcessadorMunicipio implements Processador {
             Integer id = (Integer) row.get("id_uf");
             cache.put(sigla, id);
         }
-
         System.out.println("✔ Cache de UFs carregado com " + cache.size() + " entradas.");
         return cache;
+    }
+
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        Processador processadorMunicipio = new ProcessadorMunicipio(jdbcTemplate, s3Client);
+        try {
+            processadorMunicipio.processar(bucket, "planilhas/dados_cursos/municipios.xlsx");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados dos Municípios, erro: %s", e.getMessage()));
+        }
     }
 }

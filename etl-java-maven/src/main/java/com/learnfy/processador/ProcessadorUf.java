@@ -1,6 +1,9 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.modelo.Uf;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -135,8 +138,19 @@ public class ProcessadorUf implements Processador {
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+        }
+    }
+
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        Processador processadorUf = new ProcessadorUf(jdbcTemplate, s3Client);
+        try {
+            processadorUf.processar(bucket, "planilhas/dados_cursos/estados.xlsx");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados dos Estados, erro: %s", e.getMessage()));
         }
     }
 }

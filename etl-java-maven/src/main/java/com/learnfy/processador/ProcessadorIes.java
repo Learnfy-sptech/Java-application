@@ -1,6 +1,9 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.modelo.Ies;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -28,7 +31,7 @@ public class ProcessadorIes implements Processador {
     }
 
     @Override
-    public void processar(String bucket, String key) throws Exception {
+    public void processar(String bucket, String key) {
         System.out.println("Iniciando processamento do arquivo: " + key);
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
@@ -147,8 +150,6 @@ public class ProcessadorIes implements Processador {
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
         }
     }
 
@@ -165,5 +166,18 @@ public class ProcessadorIes implements Processador {
 
         System.out.println("✔ Cache de municípios carregado com " + cache.size() + " entradas.");
         return cache;
+    }
+
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        Processador processadorIes = new ProcessadorIes(jdbcTemplate, s3Client);
+        try {
+            processadorIes.processar(bucket, "planilhas/dados_cursos/instituicoes_ensino.xlsx");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados das Instituições de Ensino, erro: %s", e.getMessage()));
+        }
     }
 }

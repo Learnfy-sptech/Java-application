@@ -10,7 +10,7 @@ import java.util.List;
 import static com.learnfy.processador.ProcessadorFactory.inserirDadosEscolaridade;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
         String prefixo = "planilhas/";
@@ -33,7 +33,11 @@ public class Main {
 
                 if (arquivoMaisRecente.endsWith(".xlsx") || arquivoMaisRecente.endsWith(".xls") || arquivoMaisRecente.endsWith(".csv")) {
                     Processador processador = ProcessadorFactory.getProcessador(arquivoMaisRecente, jdbcTemplate, s3Client, bucket);
-                    processador.processar(bucket, arquivoMaisRecente);
+                    try {
+                        processador.processar(bucket, arquivoMaisRecente);
+                    } catch (Exception e) {
+                        System.out.println(String.format("Houve um erro ao inserir os dados da tabela %s", arquivoMaisRecente));
+                    }
                 }
             }
         }
