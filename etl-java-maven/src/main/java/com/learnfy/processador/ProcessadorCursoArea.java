@@ -2,7 +2,6 @@ package com.learnfy.processador;
 
 import com.learnfy.modelo.Area;
 import com.learnfy.modelo.Curso;
-import com.learnfy.modelo.Ies;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -25,12 +24,10 @@ import java.util.List;
 public class ProcessadorCursoArea implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
-    private final String bucketName;
 
-    public ProcessadorCursoArea(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorCursoArea(JdbcTemplate jdbcTemplate, S3Client s3Client) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
-        this.bucketName = bucketName;
     }
 
     @Override

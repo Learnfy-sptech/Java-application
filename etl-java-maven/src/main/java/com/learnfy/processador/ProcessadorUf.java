@@ -22,12 +22,10 @@ import java.util.List;
 public class ProcessadorUf implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
-    private final String bucketName;
 
-    public ProcessadorUf(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorUf(JdbcTemplate jdbcTemplate, S3Client s3Client) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
-        this.bucketName = bucketName;
     }
 
     @Override
