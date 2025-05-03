@@ -104,16 +104,12 @@ public class ProcessadorCursoArea implements Processador {
                     formattedValue = formattedValue.trim();
 
                     switch (currentCol) {
-                        case 0 -> curso.setNomeCurso(formattedValue);
-                        case 1 -> curso.setGrauAcademico(parseInt(formattedValue));
-                        case 2 -> area.setNome(formattedValue);
+                        case 0 -> curso.setNomeCurso(tratarTexto(formattedValue));
+                        case 1 -> area.setNome(tratarTexto(formattedValue));
+                        case 2 -> curso.setGrauAcademico(formattedValue);
                     }
                 }
 
-                @Override
-                public void headerFooter(String text, boolean isHeader, String tagName) {
-                    // Ignora cabeçalho e rodapé
-                }
             };
 
             XMLReader parser = XMLReaderFactory.createXMLReader();
@@ -138,11 +134,19 @@ public class ProcessadorCursoArea implements Processador {
     }
 
     private int parseInt(String value) {
-        try {
-            return value != null && !value.isEmpty() ? (int) Double.parseDouble(value) : 0;
-        } catch (Exception e) {
-            return 0;
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
+    }
+
+    public String tratarTexto(String valor) {
+        if (valor != null) {
+
+            if (valor.matches(".* - .*")) {
+                valor = valor.substring(0, valor.indexOf("-") - 1);
+            }
+            return valor.toUpperCase();
         }
+
+        return "";
     }
 
     private int colunaParaIndice(String col) {
@@ -161,11 +165,11 @@ public class ProcessadorCursoArea implements Processador {
         try {
             jdbcTemplate.batchUpdate(sqlCurso, cursoList, cursoList.size(), (ps, curso) -> {
                 ps.setInt(1, curso.getFkArea());
-                ps.setString(2, curso.getNomeCurso() != null ? curso.getNomeCurso() : "");
-                ps.setInt(3, curso.getGrauAcademico() != null ? curso.getGrauAcademico() : 0);
+                ps.setString(2, curso.getNomeCurso());
+                ps.setString(3, curso.getGrauAcademico());
             });
         } catch (Exception e) {
-            System.err.println("Erro ao inserir batch: " + e.getMessage());
+            System.out.println(String.format("Erro ao inserir batch: " + e.getMessage()));
         }
     }
 

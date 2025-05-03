@@ -81,18 +81,11 @@ public class ProcessadorUf implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     int currentCol = colunaParaIndice(col);
 
-                    formattedValue = formattedValue.trim();
-
                     switch (currentCol) {
-                        case 0 -> uf.setSigla(formattedValue);
-                        case 1 -> uf.setNome(formattedValue);
-                        case 2 -> uf.setRegiao(formattedValue);
+                        case 0 -> uf.setSigla(tratarTexto(formattedValue));
+                        case 1 -> uf.setNome(tratarTexto(formattedValue));
+                        case 2 -> uf.setRegiao(tratarTexto(formattedValue));
                     }
-                }
-
-                @Override
-                public void headerFooter(String text, boolean isHeader, String tagName) {
-                    // Ignora cabeçalho e rodapé
                 }
             };
 
@@ -113,8 +106,16 @@ public class ProcessadorUf implements Processador {
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
-            System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            System.out.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
         }
+    }
+
+    private int parseInt(String value) {
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
+    }
+
+    private String tratarTexto(String valor) {
+        return valor != null ? valor.trim().toUpperCase() : "";
     }
 
     private int colunaParaIndice(String col) {
@@ -132,12 +133,12 @@ public class ProcessadorUf implements Processador {
 
         try {
             jdbcTemplate.batchUpdate(sql, ufs, ufs.size(), (ps, uf) -> {
-                ps.setString(1, uf.getSigla() != null ? uf.getSigla() : "");
-                ps.setString(2, uf.getNome() != null ? uf.getNome() : "");
-                ps.setString(3, uf.getRegiao() != null ? uf.getRegiao() : "");
+                ps.setString(1, uf.getSigla());
+                ps.setString(2, uf.getNome());
+                ps.setString(3, uf.getRegiao());
             });
         } catch (Exception e) {
-            System.err.println("Erro ao inserir batch: " + e.getMessage());
+            System.out.println("Erro ao inserir batch: " + e.getMessage());
         }
     }
 

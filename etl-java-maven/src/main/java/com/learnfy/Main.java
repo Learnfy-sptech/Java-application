@@ -24,7 +24,7 @@ public class Main {
         Boolean primeiravez = true;
 
         if (primeiravez) {
-            inserirDadosEscolaridade(jdbcTemplate, s3Client, bucket);
+            ProcessadorFactory.inserirDadosEscolaridade(jdbcTemplate, s3Client, bucket);
         } else {
             List<String> arquivos = S3Service.listarArquivos(bucket, prefixo);
 

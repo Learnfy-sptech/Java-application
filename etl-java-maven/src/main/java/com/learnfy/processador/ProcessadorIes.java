@@ -43,7 +43,6 @@ public class ProcessadorIes implements Processador {
                 throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
 
-            // 🔄 Carrega cache de municípios uma vez
             Map<String, Integer> cacheMunicipios = carregarMunicipios();
 
             OPCPackage pkg = OPCPackage.open(inputStream);
@@ -93,18 +92,10 @@ public class ProcessadorIes implements Processador {
                     formattedValue = formattedValue.trim();
 
                     switch (currentCol) {
-                        case 0 -> ies.setNome(formattedValue);
-                        case 1 -> {
-                            if (formattedValue.equals("Privada")) ies.setRedePublica(0);
-                            else ies.setRedePublica(1);
-                        }
-                        case 2 -> ies.setNomeMunicipio(formattedValue);
+                        case 0 -> ies.setNomeMunicipio(tratarTexto(formattedValue));
+                        case 1 -> ies.setOrganizacaoAcademica(tratarTexto(formattedValue));
+                        case 2 -> ies.setNome(tratarTexto(formattedValue));
                     }
-                }
-
-                @Override
-                public void headerFooter(String text, boolean isHeader, String tagName) {
-                    // Ignora cabeçalho e rodapé
                 }
             };
 
@@ -129,6 +120,14 @@ public class ProcessadorIes implements Processador {
         }
     }
 
+    private String tratarTexto(String valor) {
+        return valor != null ? valor.trim().toUpperCase() : "";
+    }
+
+    private int parseInt(String value) {
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
+    }
+
     private int colunaParaIndice(String col) {
         int index = 0;
         for (char c : col.toCharArray()) {
@@ -140,21 +139,21 @@ public class ProcessadorIes implements Processador {
     private void enviarBatch(List<Ies> iesList) {
         System.out.println("Inserindo " + iesList.size() + " registros no banco.");
 
-        String sql = "INSERT INTO ies_tb (fk_municipio, rede_publica, nome) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO ies_tb (fk_municipio, organizacao_academica, nome) VALUES (?, ?, ?)";
 
         try {
             jdbcTemplate.batchUpdate(sql, iesList, iesList.size(), (ps, ies) -> {
                 ps.setInt(1, ies.getFkMunicipio());
-                ps.setInt(2, ies.getRedePublica());
-                ps.setString(3, ies.getNome() != null ? ies.getNome() : "");
+                ps.setString(2, ies.getOrganizacaoAcademica());
+                ps.setString(3, ies.getNome());
             });
         } catch (Exception e) {
-            System.err.println("Erro ao inserir batch: " + e.getMessage());
+            System.out.println("Erro ao inserir batch: " + e.getMessage());
         }
     }
 
     private Map<String, Integer> carregarMunicipios() {
-        System.out.println("📥 Carregando cache de municípios...");
+        System.out.println("Carregando cache de municípios...");
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id_municipio, nome FROM municipio_tb");
 
         Map<String, Integer> cache = new HashMap<>();

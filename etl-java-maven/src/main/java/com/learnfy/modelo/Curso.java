@@ -5,20 +5,20 @@ public class Curso {
     private Integer id;
     private Integer fkArea;
     private String nomeCurso;
-    private Integer grauAcademico;
+    private String grauAcademico;
 
     public Curso() {
         id = null;
         fkArea = null;
     }
 
-    public Curso(String nomeCurso, Integer grauAcademico) {
+    public Curso(String nomeCurso, String grauAcademico) {
         this();
         this.nomeCurso = nomeCurso;
         this.grauAcademico = grauAcademico;
     }
 
-    public Curso(Integer id, Integer fkArea, String nomeCurso, Integer grauAcademico) {
+    public Curso(Integer id, Integer fkArea, String nomeCurso, String grauAcademico) {
         this.id = id;
         this.fkArea = fkArea;
         this.nomeCurso = nomeCurso;
@@ -49,11 +49,11 @@ public class Curso {
         this.nomeCurso = nomeCurso;
     }
 
-    public Integer getGrauAcademico() {
+    public String getGrauAcademico() {
         return grauAcademico;
     }
 
-    public void setGrauAcademico(Integer grauAcademico) {
+    public void setGrauAcademico(String grauAcademico) {
         this.grauAcademico = grauAcademico;
     }
 }

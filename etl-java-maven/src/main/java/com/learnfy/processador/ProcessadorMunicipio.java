@@ -43,7 +43,6 @@ public class ProcessadorMunicipio implements Processador {
                 throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
 
-            // ⚡ Carrega o cache de UFs uma vez
             Map<String, Integer> cacheUf = carregarUfs();
 
             OPCPackage pkg = OPCPackage.open(inputStream);
@@ -78,7 +77,7 @@ public class ProcessadorMunicipio implements Processador {
                                 batchMunicipio.clear();
                             }
                         } else {
-                            System.out.printf("⚠ UF não encontrada para sigla: %s (linha %d)%n", municipio.getSiglaUf(), rowNum);
+                            System.out.printf("Uf não encontrada para sigla: %s (linha %d)%n", municipio.getSiglaUf(), rowNum);
                         }
                     }
                 }
@@ -89,17 +88,10 @@ public class ProcessadorMunicipio implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     int currentCol = colunaParaIndice(col);
 
-                    formattedValue = formattedValue.trim();
-
                     switch (currentCol) {
-                        case 0 -> municipio.setNome(formattedValue);
-                        case 1 -> municipio.setSiglaUf(formattedValue);
+                        case 0 -> municipio.setNome(tratarTexto(formattedValue));
+                        case 1 -> municipio.setSiglaUf(tratarTexto(formattedValue));
                     }
-                }
-
-                @Override
-                public void headerFooter(String text, boolean isHeader, String tagName) {
-                    // Ignora cabeçalho e rodapé
                 }
             };
 
@@ -140,12 +132,20 @@ public class ProcessadorMunicipio implements Processador {
 
         try {
             jdbcTemplate.batchUpdate(sql, municipios, municipios.size(), (ps, municipio) -> {
-                ps.setString(1, municipio.getNome() != null ? municipio.getNome() : "");
+                ps.setString(1, municipio.getNome());
                 ps.setInt(2, municipio.getFkUf());
             });
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
         }
+    }
+
+    private int parseInt(String value) {
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
+    }
+
+    private String tratarTexto(String valor) {
+        return valor != null ? valor.trim().toUpperCase() : "";
     }
 
     private Map<String, Integer> carregarUfs() {

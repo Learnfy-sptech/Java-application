@@ -5,7 +5,7 @@ public class Ies {
     private Integer id;
     private Integer fkMunicipio;
     private String nomeMunicipio;
-    private Integer redePublica;
+    private String organizacaoAcademica;
     private String nome;
 
     public Ies() {
@@ -13,18 +13,18 @@ public class Ies {
         fkMunicipio = null;
     }
 
-    public Ies(String nomeMunicipio, Integer redePublica, String nome) {
+    public Ies(String nomeMunicipio, String organizacaoAcademica, String nome) {
         this();
         this.nomeMunicipio = nomeMunicipio;
-        this.redePublica = redePublica;
+        this.organizacaoAcademica = organizacaoAcademica;
         this.nome = nome;
     }
 
-    public Ies(Integer id, Integer fkMunicipio, String nomeMunicipio, Integer redePublica, String nome) {
+    public Ies(Integer id, Integer fkMunicipio, String nomeMunicipio, String organizacaoAcademica, String nome) {
         this.id = id;
         this.fkMunicipio = fkMunicipio;
         this.nomeMunicipio = nomeMunicipio;
-        this.redePublica = redePublica;
+        this.organizacaoAcademica = organizacaoAcademica;
         this.nome = nome;
     }
 
@@ -52,12 +52,12 @@ public class Ies {
         this.nomeMunicipio = nomeMunicipio;
     }
 
-    public Integer getRedePublica() {
-        return redePublica;
+    public String getOrganizacaoAcademica() {
+        return organizacaoAcademica;
     }
 
-    public void setRedePublica(Integer redePublica) {
-        this.redePublica = redePublica;
+    public void setOrganizacaoAcademica(String organizacaoAcademica) {
+        this.organizacaoAcademica = organizacaoAcademica;
     }
 
     public String getNome() {
