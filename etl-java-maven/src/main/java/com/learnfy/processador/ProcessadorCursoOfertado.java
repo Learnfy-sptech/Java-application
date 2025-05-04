@@ -1,7 +1,11 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.modelo.CursoOfertado;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.usermodel.XSSFComment;
@@ -14,7 +18,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -23,16 +29,14 @@ import org.xml.sax.helpers.XMLReaderFactory;
 public class ProcessadorCursoOfertado implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
-    private final String bucketName;
 
-    public ProcessadorCursoOfertado(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorCursoOfertado(JdbcTemplate jdbcTemplate, S3Client s3Client) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
-        this.bucketName = bucketName;
     }
 
     @Override
-    public void processar(String bucket, String key) throws Exception {
+    public void processar(String bucket, String key) {
         System.out.println("Iniciando processamento do arquivo: " + key);
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
@@ -44,6 +48,28 @@ public class ProcessadorCursoOfertado implements Processador {
                 throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
             }
 
+            // Pré-carrega as FKs em Mapas
+            Map<String, Integer> nomeIesToId = jdbcTemplate.query(
+                    "SELECT nome, id_ies FROM ies_tb",
+                    rs -> {
+                        Map<String, Integer> map = new HashMap<>();
+                        while (rs.next()) {
+                            map.put(rs.getString("nome").trim(), rs.getInt("id_ies"));
+                        }
+                        return map;
+                    });
+
+            Map<String, Integer> nomeCursoToId = jdbcTemplate.query(
+                    "SELECT nome, id_curso FROM curso_tb",
+                    rs -> {
+                        Map<String, Integer> map = new HashMap<>();
+                        while (rs.next()) {
+                            map.put(rs.getString("nome").trim(), rs.getInt("id_curso"));
+                        }
+                        return map;
+                    });
+
+            IOUtils.setByteArrayMaxOverride(1_000_000_000);
             OPCPackage pkg = OPCPackage.open(inputStream);
             XSSFReader reader = new XSSFReader(pkg);
             ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
@@ -58,17 +84,23 @@ public class ProcessadorCursoOfertado implements Processador {
 
                 @Override
                 public void startRow(int rowNum) {
-                    if (rowNum == 0) {
-                        // Ignora o cabeçalho
-                        curso = null;
-                        return;
-                    }
-                    curso = new CursoOfertado();
+                    curso = (rowNum == 0) ? null : new CursoOfertado();
                 }
 
                 @Override
                 public void endRow(int rowNum) {
                     if (curso != null) {
+                        Integer fkIes = nomeIesToId.get(curso.getNomeIes());
+                        Integer fkCurso = nomeCursoToId.get(curso.getNomeCurso());
+
+                        if (fkIes == null || fkCurso == null) {
+                            System.out.println(String.format("Linha ignorada. IES ou Curso não encontrado: '%s' | '%s'%n", curso.getNomeIes(), curso.getNomeCurso()));
+                            return;
+                        }
+
+                        curso.setFkIes(fkIes);
+                        curso.setFkCurso(fkCurso);
+
                         batchCursoOfertados.add(curso);
                         if (batchCursoOfertados.size() == BATCH_SIZE) {
                             enviarBatch(batchCursoOfertados);
@@ -83,36 +115,33 @@ public class ProcessadorCursoOfertado implements Processador {
                     String col = cellReference.replaceAll("\\d", "");
                     currentCol = colunaParaIndice(col);
 
+                    formattedValue = formattedValue.trim();
+
                     switch (currentCol) {
                         case 0 -> curso.setAno(parseInt(formattedValue));
-                        case 1 -> curso.setSiglaUf(formattedValue);
-                        case 2 -> curso.setIdMunicipio(parseInt(formattedValue));
-                        case 3 -> curso.setRede(formattedValue);
-                        case 4 -> curso.setIdIes(parseInt(formattedValue));
-                        case 5 -> curso.setNomeCurso(formattedValue);
-                        case 6 -> curso.setNomeArea(formattedValue);
-                        case 7 -> curso.setGrauAcademico(parseInt(formattedValue));
-                        case 8 -> curso.setModalidadeEnsino(parseInt(formattedValue));
-                        case 9 -> curso.setQtdVagas(parseInt(formattedValue));
-                        case 10 -> curso.setQtdVagasDiurno(parseInt(formattedValue));
-                        case 11 -> curso.setQtdVagasNoturno(parseInt(formattedValue));
-                        case 12 -> curso.setQtdVagasEad(parseInt(formattedValue));
-                        case 13 -> curso.setQtdIncritos(parseInt(formattedValue));
-                        case 14 -> curso.setQtdIncritosDiurno(parseInt(formattedValue));
-                        case 15 -> curso.setQtdIncritosNoturno(parseInt(formattedValue));
-                        case 16 -> curso.setQtdIncritosEad(parseInt(formattedValue));
-                        case 17 -> curso.setQtdConcluintesDiurno(parseInt(formattedValue));
-                        case 18 -> curso.setQtdConcluintesNoturno(parseInt(formattedValue));
-                        case 19 -> curso.setQtdIngressantesRedePublica(parseInt(formattedValue));
-                        case 20 -> curso.setQtdIngressantesRedePrivada(parseInt(formattedValue));
-                        case 21 -> curso.setQtdConcluintesRedePublica(parseInt(formattedValue));
-                        case 22 -> curso.setQtdConcluintesRedePrivada(parseInt(formattedValue));
+                        case 1 -> curso.setNomeIes(tratarTexto(formattedValue));
+                        case 2 -> curso.setNomeCurso(tratarTexto(formattedValue));
+                        case 3 -> curso.setModalidadeEnsino(parseInt(formattedValue));
+                        case 4 -> curso.setQtdVagas(parseInt(formattedValue));
+                        case 5 -> curso.setQtdVagasDiurno(parseInt(formattedValue));
+                        case 6 -> curso.setQtdVagasNoturno(parseInt(formattedValue));
+                        case 7 -> curso.setQtdVagasEad(parseInt(formattedValue));
+                        case 8 -> curso.setQtdIncritos(parseInt(formattedValue));
+                        case 9 -> curso.setQtdIncritosDiurno(parseInt(formattedValue));
+                        case 10 -> curso.setQtdIncritosNoturno(parseInt(formattedValue));
+                        case 11 -> curso.setQtdIncritosEad(parseInt(formattedValue));
+                        case 12 -> curso.setQtdConcluintes(parseInt(formattedValue));
+                        case 13 -> curso.setQtdConcluintesDiurno(parseInt(formattedValue));
+                        case 14 -> curso.setQtdConcluintesNoturno(parseInt(formattedValue));
+                        case 15 -> curso.setQtdIngressantesRedePublica(parseInt(formattedValue));
+                        case 16 -> curso.setQtdIngressantesRedePrivada(parseInt(formattedValue));
+                        case 17 -> curso.setQtdConcluintesRedePublica(parseInt(formattedValue));
+                        case 18 -> curso.setQtdConcluintesRedePrivada(parseInt(formattedValue));
                     }
                 }
 
                 @Override
                 public void headerFooter(String text, boolean isHeader, String tagName) {
-                    // Ignorar cabeçalho e rodapé
                 }
             };
 
@@ -128,7 +157,6 @@ public class ProcessadorCursoOfertado implements Processador {
 
             if (!batchCursoOfertados.isEmpty()) {
                 enviarBatch(batchCursoOfertados);
-                batchCursoOfertados.clear();
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
@@ -137,12 +165,14 @@ public class ProcessadorCursoOfertado implements Processador {
         }
     }
 
+
+
     private int parseInt(String value) {
-        try {
-            return value != null && !value.isEmpty() ? (int) Double.parseDouble(value) : 0;
-        } catch (Exception e) {
-            return 0;
-        }
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
+    }
+
+    private String tratarTexto(String valor) {
+        return valor != null ? valor.trim().toUpperCase() : "";
     }
 
     private int colunaParaIndice(String col) {
@@ -156,44 +186,52 @@ public class ProcessadorCursoOfertado implements Processador {
     private void enviarBatch(List<CursoOfertado> cursoOfertados) {
         System.out.println("Inserindo " + cursoOfertados.size() + " registros no banco.");
 
-        String sql = "INSERT INTO curso (\n" +
-                "    ano, sigla_uf, id_municipio, rede, id_ies, nome_curso, nome_area, grau_academico,\n" +
-                "    modalidade_ensino, qtd_vagas, qtd_vagas_diurno, qtd_vagas_noturno, qtd_vagas_ead,\n" +
-                "    qtd_inscritos, qtd_inscritos_diurno, qtd_inscritos_noturno, qtd_inscritos_ead,\n" +
-                "    qtd_concluintes_diurno, qtd_concluintes_noturno, qtd_ingressantes_rede_publica,\n" +
-                "    qtd_ingressantes_rede_privada, qtd_concluintes_rede_publica, qtd_concluintes_rede_privada\n" +
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO curso_ofertado_tb (\n" +
+                "    ano, fk_ies, fk_curso, modalidade_ensino,\n" +
+                "    qtd_vagas, qtd_vagas_diurno, qtd_vagas_noturno, qtd_vagas_ead,\n" +
+                "    qtd_incritos, qtd_incritos_diurno, qtd_incritos_noturno, qtd_incritos_ead,\n" +
+                "    qtd_concluintes, qtd_concluintes_diurno, qtd_concluintes_noturno,\n" +
+                "    qtd_ingressantes_rede_publica, qtd_ingressantes_rede_privada,\n" +
+                "    qtd_concluintes_rede_publica, qtd_concluintes_rede_privada\n" +
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);\n";
 
         try {
             jdbcTemplate.batchUpdate(sql, cursoOfertados, cursoOfertados.size(), (ps, cursoOfertado) -> {
-                ps.setInt(1, cursoOfertado.getAno() != null ? cursoOfertado.getAno() : 0);
-                ps.setString(2, cursoOfertado.getSiglaUf() != null ? cursoOfertado.getSiglaUf() : "");
-                ps.setInt(3, cursoOfertado.getIdMunicipio() != null ? cursoOfertado.getIdMunicipio() : 0);
-                ps.setString(4, cursoOfertado.getRede() != null ? cursoOfertado.getRede() : "");
-                ps.setInt(5, cursoOfertado.getIdIes() != null ? cursoOfertado.getIdIes() : 0);
-                ps.setString(6, cursoOfertado.getNomeCurso() != null ? cursoOfertado.getNomeCurso() : "");
-                ps.setString(7, cursoOfertado.getNomeArea() != null ? cursoOfertado.getNomeArea() : "");
-                ps.setInt(8, cursoOfertado.getGrauAcademico() != null ? cursoOfertado.getGrauAcademico() : 0);
-                ps.setInt(9, cursoOfertado.getModalidadeEnsino() != null ? cursoOfertado.getModalidadeEnsino() : 0);
-                ps.setInt(10, cursoOfertado.getQtdVagas() != null ? cursoOfertado.getQtdVagas() : 0);
-                ps.setInt(11, cursoOfertado.getQtdVagasDiurno() != null ? cursoOfertado.getQtdVagasDiurno() : 0);
-                ps.setInt(12, cursoOfertado.getQtdVagasNoturno() != null ? cursoOfertado.getQtdVagasNoturno() : 0);
-                ps.setInt(13, cursoOfertado.getQtdVagasEad() != null ? cursoOfertado.getQtdVagasEad() : 0);
-                ps.setInt(14, cursoOfertado.getQtdIncritos() != null ? cursoOfertado.getQtdIncritos() : 0);
-                ps.setInt(15, cursoOfertado.getQtdIncritosDiurno() != null ? cursoOfertado.getQtdIncritosDiurno() : 0);
-                ps.setInt(16, cursoOfertado.getQtdIncritosNoturno() != null ? cursoOfertado.getQtdIncritosNoturno() : 0);
-                ps.setInt(17, cursoOfertado.getQtdIncritosEad() != null ? cursoOfertado.getQtdIncritosEad() : 0);
-                ps.setInt(18, cursoOfertado.getQtdConcluintesDiurno() != null ? cursoOfertado.getQtdConcluintesDiurno() : 0);
-                ps.setInt(19, cursoOfertado.getQtdConcluintesNoturno() != null ? cursoOfertado.getQtdConcluintesNoturno() : 0);
-                ps.setInt(20, cursoOfertado.getQtdIngressantesRedePublica() != null ? cursoOfertado.getQtdIngressantesRedePublica() : 0);
-                ps.setInt(21, cursoOfertado.getQtdIngressantesRedePrivada() != null ? cursoOfertado.getQtdIngressantesRedePrivada() : 0);
-                ps.setInt(22, cursoOfertado.getQtdConcluintesRedePublica() != null ? cursoOfertado.getQtdConcluintesRedePublica() : 0);
-                ps.setInt(23, cursoOfertado.getQtdConcluintesRedePrivada() != null ? cursoOfertado.getQtdConcluintesRedePrivada() : 0);
+                ps.setInt(1, cursoOfertado.getAno());
+                ps.setInt(2, cursoOfertado.getFkIes());
+                ps.setInt(3, cursoOfertado.getFkCurso());
+                ps.setInt(4, cursoOfertado.getModalidadeEnsino());
+                ps.setInt(5, cursoOfertado.getQtdVagas());
+                ps.setInt(6, cursoOfertado.getQtdVagasDiurno());
+                ps.setInt(7, cursoOfertado.getQtdVagasNoturno());
+                ps.setInt(8, cursoOfertado.getQtdVagasEad());
+                ps.setInt(9, cursoOfertado.getQtdIncritos());
+                ps.setInt(10, cursoOfertado.getQtdIncritosDiurno());
+                ps.setInt(11, cursoOfertado.getQtdIncritosNoturno());
+                ps.setInt(12, cursoOfertado.getQtdIncritosEad());
+                ps.setInt(13, cursoOfertado.getQtdConcluintes());
+                ps.setInt(14, cursoOfertado.getQtdConcluintesDiurno());
+                ps.setInt(15, cursoOfertado.getQtdConcluintesNoturno());
+                ps.setInt(16, cursoOfertado.getQtdIngressantesRedePublica());
+                ps.setInt(17, cursoOfertado.getQtdIngressantesRedePrivada());
+                ps.setInt(18, cursoOfertado.getQtdConcluintesRedePublica());
+                ps.setInt(19, cursoOfertado.getQtdConcluintesRedePrivada());
             });
         } catch (Exception e) {
-            System.err.println("Erro ao inserir batch: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            System.out.println("Erro ao inserir batch: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        Processador processadorCursoOfertado = new ProcessadorCursoOfertado(jdbcTemplate, s3Client);
+        try {
+            processadorCursoOfertado.processar(bucket, "planilhas/dados_cursos/cursos_ofertados.xlsx");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados dos Cursos Ofertados, erro: %s", e.getMessage()));
         }
     }
 }
