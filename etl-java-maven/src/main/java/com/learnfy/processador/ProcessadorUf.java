@@ -2,6 +2,7 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Uf;
 import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -25,15 +26,18 @@ import java.util.List;
 public class ProcessadorUf implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final LogService logService;
 
-    public ProcessadorUf(JdbcTemplate jdbcTemplate, S3Client s3Client) {
+    public ProcessadorUf(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) throws Exception {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorUf", "START", "Iniciando processamento do arquivo");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -72,6 +76,8 @@ public class ProcessadorUf implements Processador {
                             enviarBatch(batchUfs);
                             batchUfs.clear();
                         }
+                    } else {
+                        logService.registrarLog(key, "ProcessadorUF", "ALERTA", "Erro ao processar linha: " + rowNum);
                     }
                 }
 
@@ -105,8 +111,10 @@ public class ProcessadorUf implements Processador {
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
+            logService.registrarLog(key, "ProcessadorUF", "SUCESSO", "Leitura da planilha finalizada com sucesso.");
         } catch (Exception e) {
             System.out.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorUf", "CRITICO", "Erro ao processar a planilha: " + e.getMessage());
         }
     }
 
@@ -137,17 +145,20 @@ public class ProcessadorUf implements Processador {
                 ps.setString(2, uf.getNome());
                 ps.setString(3, uf.getRegiao());
             });
+            logService.registrarLog("BatchInsert", "ProcessadorUf", "SUCESSO", "Batch inserido com sucesso.");
         } catch (Exception e) {
             System.out.println("Erro ao inserir batch: " + e.getMessage());
+            logService.registrarLog("BatchInsert", "ProcessadorUf", "CRITICO", "Erro ao inserir batch: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
-
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
-        Processador processadorUf = new ProcessadorUf(jdbcTemplate, s3Client);
+        LogService logService = new LogService(jdbcTemplate);
+
+        Processador processadorUf = new ProcessadorUf(jdbcTemplate, s3Client, logService);
         try {
             processadorUf.processar(bucket, "planilhas/dados_cursos/estados.xlsx");
         } catch (Exception e) {

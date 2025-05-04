@@ -2,8 +2,10 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Ies;
 import com.learnfy.s3.S3Service;
+import org.apache.commons.math3.analysis.function.Log;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -24,15 +26,18 @@ import java.util.*;
 public class ProcessadorIes implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final LogService logService;
 
-    public ProcessadorIes(JdbcTemplate jdbcTemplate, S3Client s3Client) {
+    public ProcessadorIes(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorIes", "START", "Iniciando processamento do arquivo.");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -117,6 +122,7 @@ public class ProcessadorIes implements Processador {
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorIes", "CRITICO", "Erro ao processar a planilha");
         }
     }
 
@@ -147,8 +153,10 @@ public class ProcessadorIes implements Processador {
                 ps.setString(2, ies.getOrganizacaoAcademica());
                 ps.setString(3, ies.getNome());
             });
+            logService.registrarLog("BatchIES","ProcessadorIes", "SUCESSO", "Sucesso na inserção de Batch");
         } catch (Exception e) {
             System.out.println("Erro ao inserir batch: " + e.getMessage());
+            logService.registrarLog("BatchIES","ProcessadorIes", "CRITICO", "Erro ao inserir batch: " + e.getMessage());
         }
     }
 
@@ -170,9 +178,10 @@ public class ProcessadorIes implements Processador {
     public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
-
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
-        Processador processadorIes = new ProcessadorIes(jdbcTemplate, s3Client);
+        LogService logService = new LogService(jdbcTemplate);
+
+        Processador processadorIes = new ProcessadorIes(jdbcTemplate, s3Client, logService);
         try {
             processadorIes.processar(bucket, "planilhas/dados_cursos/instituicoes_ensino.xlsx");
         } catch (Exception e) {

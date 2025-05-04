@@ -2,8 +2,10 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Municipio;
 import com.learnfy.s3.S3Service;
+import com.mysql.cj.log.Log;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -24,15 +26,18 @@ import java.util.*;
 public class ProcessadorMunicipio implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final LogService logService;
 
-    public ProcessadorMunicipio(JdbcTemplate jdbcTemplate, S3Client s3Client) {
+    public ProcessadorMunicipio(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) throws Exception {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorMunicipio", "START", "Iniciando processamento do arquivo.");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -78,6 +83,7 @@ public class ProcessadorMunicipio implements Processador {
                             }
                         } else {
                             System.out.printf("Uf não encontrada para sigla: %s (linha %d)%n", municipio.getSiglaUf(), rowNum);
+                            logService.registrarLog(key, "ProcessadorMunicipio", "ALERTA", "Uf não encontrada para sigla: " + municipio.getSiglaUf());
                         }
                     }
                 }
@@ -111,8 +117,10 @@ public class ProcessadorMunicipio implements Processador {
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
+            logService.registrarLog(key, "ProcessadorMunicipio", "SUCESSO", "Leitura da planilha finalizada com sucesso.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorMunicipio", "CRITICO", "Erro ao processar a planilha: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -135,8 +143,10 @@ public class ProcessadorMunicipio implements Processador {
                 ps.setString(1, municipio.getNome());
                 ps.setInt(2, municipio.getFkUf());
             });
+            logService.registrarLog("BatchInsert", "ProcessadorMunicipio", "SUCESSO", "Batch inserido com sucesso.");
         } catch (Exception e) {
             System.err.println("Erro ao inserir batch: " + e.getMessage());
+            logService.registrarLog("BatchInsert", "ProcessadorMunicipio", "CRITICO", "Erro ao inserir batch: " + e.getMessage());
         }
     }
 
@@ -165,9 +175,10 @@ public class ProcessadorMunicipio implements Processador {
     public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
-
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
-        Processador processadorMunicipio = new ProcessadorMunicipio(jdbcTemplate, s3Client);
+        LogService logService = new LogService(jdbcTemplate);
+
+        Processador processadorMunicipio = new ProcessadorMunicipio(jdbcTemplate, s3Client, logService);
         try {
             processadorMunicipio.processar(bucket, "planilhas/dados_cursos/municipios.xlsx");
         } catch (Exception e) {

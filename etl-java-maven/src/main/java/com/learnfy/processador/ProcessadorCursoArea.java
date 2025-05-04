@@ -2,6 +2,7 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Area;
 import com.learnfy.modelo.Curso;
 import com.learnfy.s3.S3Service;
@@ -25,15 +26,18 @@ import java.util.*;
 public class ProcessadorCursoArea implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final LogService logService;
 
-    public ProcessadorCursoArea(JdbcTemplate jdbcTemplate, S3Client s3Client) {
+    public ProcessadorCursoArea(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorCursoArea", "START", "Iniciando processamento do arquivo.");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -76,24 +80,31 @@ public class ProcessadorCursoArea implements Processador {
                 @Override
                 public void endRow(int rowNum) {
                     if (curso != null && area != null) {
-                        String nomeArea = area.getNome().trim().toLowerCase();
+                        try {
+                            String nomeArea = area.getNome().trim().toLowerCase();
 
-                        if (!areasCadastradas.containsKey(nomeArea)) {
-                            jdbcTemplate.update("INSERT INTO area_tb (nome) VALUES (?)", area.getNome());
-                            Integer idArea = jdbcTemplate.queryForObject("SELECT id_area FROM area_tb WHERE nome = ?", Integer.class, area.getNome());
-                            areasCadastradas.put(nomeArea, idArea);
-                            curso.setFkArea(idArea);
-                        } else {
-                            curso.setFkArea(areasCadastradas.get(nomeArea));
-                        }
+                            if (!areasCadastradas.containsKey(nomeArea)) {
+                                jdbcTemplate.update("INSERT INTO area_tb (nome) VALUES (?)", area.getNome());
+                                Integer idArea = jdbcTemplate.queryForObject("SELECT id_area FROM area_tb WHERE nome = ?", Integer.class, area.getNome());
+                                areasCadastradas.put(nomeArea, idArea);
+                                curso.setFkArea(idArea);
+                            } else {
+                                curso.setFkArea(areasCadastradas.get(nomeArea));
+                            }
 
-                        batchCurso.add(curso);
-                        if (batchCurso.size() == BATCH_SIZE) {
-                            enviarBatchCurso(batchCurso);
-                            batchCurso.clear();
+                            batchCurso.add(curso);
+
+                            if (batchCurso.size() == BATCH_SIZE) {
+                                enviarBatchCurso(batchCurso);
+                                batchCurso.clear();
+                            }
+                        } catch (Exception e) {
+                            logService.registrarLog("CursoArea", "ProcessadorCursoArea", "ALERTA",
+                                    String.format("Erro na linha %d (curso: %s, área: %s): %s", rowNum + 1, curso.getNomeCurso(), area.getNome(), e.getMessage()));
                         }
                     }
                 }
+
 
                 @Override
                 public void cell(String cellReference, String formattedValue, XSSFComment comment) {
@@ -128,8 +139,10 @@ public class ProcessadorCursoArea implements Processador {
             }
 
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
+            logService.registrarLog(key, "ProcessadorCursoArea", "SUCESSO", "Processamento finalizado com sucesso.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorCursoArea", "CRITICO", "Erro crítico no processamento: " + e.getMessage());
         }
     }
 
@@ -176,9 +189,9 @@ public class ProcessadorCursoArea implements Processador {
     public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
-
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
-        Processador processadorCursoArea = new ProcessadorCursoArea(jdbcTemplate, s3Client);
+        LogService logService = new LogService(jdbcTemplate);
+        Processador processadorCursoArea = new ProcessadorCursoArea(jdbcTemplate, s3Client, logService);
         try {
             processadorCursoArea.processar(bucket, "planilhas/dados_cursos/cursos_areas.xlsx");
         } catch (Exception e) {

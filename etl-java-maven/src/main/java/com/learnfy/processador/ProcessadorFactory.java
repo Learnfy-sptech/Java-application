@@ -1,5 +1,6 @@
 package com.learnfy.processador;
 
+import com.learnfy.logs.LogService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -14,7 +15,7 @@ public class ProcessadorFactory {
         }
     }
 
-    public static void inserirDadosEscolaridade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucket) {
+    public static void inserirDadosEscolaridade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucket, LogService logService) {
         Processador processadorUf = new ProcessadorUf(jdbcTemplate, s3Client);
         try {
             processadorUf.processar(bucket, "planilhas/dados_cursos/estados.xlsx");
@@ -36,7 +37,7 @@ public class ProcessadorFactory {
             System.out.println(String.format("Não foi possível processar os dados das Instituições de Ensino, erro: %s", e.getMessage()));
         }
 
-        Processador processadorCurso = new ProcessadorCursoArea(jdbcTemplate, s3Client);
+        Processador processadorCurso = new ProcessadorCursoArea(jdbcTemplate, s3Client, logService);
         try {
             processadorCurso.processar(bucket, "planilhas/dados_cursos/cursos_areas.xlsx");
         } catch (Exception e) {

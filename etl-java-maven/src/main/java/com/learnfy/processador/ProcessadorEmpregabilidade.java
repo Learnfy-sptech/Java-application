@@ -1,5 +1,6 @@
 package com.learnfy.processador;
 
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Empregabilidade;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -15,16 +16,19 @@ public class ProcessadorEmpregabilidade implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final String bucketName;
+    private final LogService logService;
 
-    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName) {
+    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
         this.bucketName = bucketName;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) throws Exception {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorEmpregabilidade", "START", "Iniciando processamento do arquivo.");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -72,8 +76,10 @@ public class ProcessadorEmpregabilidade implements Processador {
 
             workbook.close();
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
+            logService.registrarLog(key, "ProcessadorEmpregabilidade", "SUCESSO", "Processamento finalizado com sucesso.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorEmpregabilidade", "CRITICO", "Erro ao processar planilha: " + e.getMessage());
         }
     }
 
@@ -94,6 +100,7 @@ public class ProcessadorEmpregabilidade implements Processador {
             }
         } catch (Exception e) {
             System.err.println("Erro ao extrair dados da linha: " + e.getMessage());
+            logService.registrarLog("LinhaEmpregabilidade", "ProcessadorEmpregabilidade", "ALERTA", "Erro ao extrair dados da linha: " + e.getMessage());
         }
         return dados;
     }
@@ -123,5 +130,6 @@ public class ProcessadorEmpregabilidade implements Processador {
             ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
             ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
         });
+        logService.registrarLog("BatchEmpregabilidade", "ProcessadorEmpregabilidade", "SUCESSO", "Sucesso na inserção de Batch");
     }
 }

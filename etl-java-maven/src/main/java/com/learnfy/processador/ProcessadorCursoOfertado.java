@@ -2,8 +2,10 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.CursoOfertado;
 import com.learnfy.s3.S3Service;
+import org.apache.commons.math3.analysis.function.Log;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -29,15 +31,18 @@ import org.xml.sax.helpers.XMLReaderFactory;
 public class ProcessadorCursoOfertado implements Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final LogService logService;
 
-    public ProcessadorCursoOfertado(JdbcTemplate jdbcTemplate, S3Client s3Client) {
+    public ProcessadorCursoOfertado(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) {
         System.out.println("Iniciando processamento do arquivo: " + key);
+        logService.registrarLog(key, "ProcessadorCursoOfertado", "START", "Iniciando processamento do arquivo.");
 
         try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                 .bucket(bucket)
@@ -89,24 +94,33 @@ public class ProcessadorCursoOfertado implements Processador {
 
                 @Override
                 public void endRow(int rowNum) {
+
                     if (curso != null) {
                         Integer fkIes = nomeIesToId.get(curso.getNomeIes());
                         Integer fkCurso = nomeCursoToId.get(curso.getNomeCurso());
 
                         if (fkIes == null || fkCurso == null) {
-                            System.out.println(String.format("Linha ignorada. IES ou Curso não encontrado: '%s' | '%s'%n", curso.getNomeIes(), curso.getNomeCurso()));
+                            logService.registrarLog(key, "ProcessadorCursoOfertado", "ALERTA",
+                                    String.format("Linha ignorada: IES ou Curso não encontrado: '%s' | '%s'",
+                                            curso.getNomeIes(), curso.getNomeCurso()));
                             return;
                         }
 
-                        curso.setFkIes(fkIes);
-                        curso.setFkCurso(fkCurso);
-
-                        batchCursoOfertados.add(curso);
-                        if (batchCursoOfertados.size() == BATCH_SIZE) {
-                            enviarBatch(batchCursoOfertados);
-                            batchCursoOfertados.clear();
+                        try {
+                            curso.setFkIes(fkIes);
+                            curso.setFkCurso(fkCurso);
+                            batchCursoOfertados.add(curso);
+                            if (batchCursoOfertados.size() == BATCH_SIZE) {
+                                enviarBatch(batchCursoOfertados);
+                                batchCursoOfertados.clear();
+                            }
+                        } catch (Exception e) {
+                            logService.registrarLog(key, "ProcessadorCursoOfertado", "ERRO",
+                                    "Erro ao adicionar curso no batch: " + e.getMessage());
                         }
                     }
+
+
                 }
 
                 @Override
@@ -162,10 +176,9 @@ public class ProcessadorCursoOfertado implements Processador {
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
         } catch (Exception e) {
             System.err.println("Erro ao processar a planilha '" + key + "': " + e.getMessage());
+            logService.registrarLog(key, "ProcessadorCursoOfertado", "CRITICO", "Erro ao processar planilha: " + e.getMessage());
         }
     }
-
-
 
     private int parseInt(String value) {
         return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
@@ -217,17 +230,22 @@ public class ProcessadorCursoOfertado implements Processador {
                 ps.setInt(18, cursoOfertado.getQtdConcluintesRedePublica());
                 ps.setInt(19, cursoOfertado.getQtdConcluintesRedePrivada());
             });
+            logService.registrarLog("BatchCursoOfertado", "ProcessadorCursoOfertado", "INFO",
+                    "Batch de " + cursoOfertados.size() + " cursos ofertados inserido com sucesso.");
         } catch (Exception e) {
             System.out.println("Erro ao inserir batch: " + e.getMessage());
+            logService.registrarLog("BatchCursoOfertado", "ProcessadorCursoOfertado", "ERRO",
+                    "Erro ao inserir batch: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
-
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
-        Processador processadorCursoOfertado = new ProcessadorCursoOfertado(jdbcTemplate, s3Client);
+        LogService logService = new LogService(jdbcTemplate);
+
+        Processador processadorCursoOfertado = new ProcessadorCursoOfertado(jdbcTemplate, s3Client, logService);
         try {
             processadorCursoOfertado.processar(bucket, "planilhas/dados_cursos/cursos_ofertados.xlsx");
         } catch (Exception e) {
