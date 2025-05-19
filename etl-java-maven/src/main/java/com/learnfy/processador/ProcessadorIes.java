@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import java.io.InputStream;
 import java.util.*;
 
-public class ProcessadorIes implements Processador {
+public class ProcessadorIes extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final LogService logService;

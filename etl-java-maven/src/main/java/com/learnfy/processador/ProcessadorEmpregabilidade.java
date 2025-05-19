@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessadorEmpregabilidade implements Processador {
+public class ProcessadorEmpregabilidade extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final String bucketName;

@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessadorUf implements Processador {
+public class ProcessadorUf extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final LogService logService;

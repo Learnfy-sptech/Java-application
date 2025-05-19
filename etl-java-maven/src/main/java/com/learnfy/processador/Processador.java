@@ -1,5 +1,5 @@
 package com.learnfy.processador;
 //Interface
-public interface Processador {
-    void processar(String bucket, String key) throws Exception;
+public abstract class Processador {
+    public abstract void processar(String bucket, String key) throws Exception;
 }

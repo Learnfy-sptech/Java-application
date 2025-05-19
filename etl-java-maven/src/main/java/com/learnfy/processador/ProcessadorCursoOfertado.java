@@ -28,7 +28,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-public class ProcessadorCursoOfertado implements Processador {
+public class ProcessadorCursoOfertado extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
     private final LogService logService;
