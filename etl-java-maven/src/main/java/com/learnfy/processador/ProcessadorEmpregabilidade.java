@@ -1,16 +1,20 @@
 package com.learnfy.processador;
 
 import com.learnfy.logs.LogService;
+import com.learnfy.modelo.Area;
 import com.learnfy.modelo.Empregabilidade;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ProcessadorEmpregabilidade extends Processador {
     private final JdbcTemplate jdbcTemplate;
@@ -50,6 +54,10 @@ public class ProcessadorEmpregabilidade extends Processador {
 
             boolean primeiraLinha = true;
 
+            Empregabilidade empregabilidade;
+
+            empregabilidade = new Empregabilidade();
+
             for (Row row : sheet) {
                 if (primeiraLinha) {
                     primeiraLinha = false;
@@ -59,6 +67,16 @@ public class ProcessadorEmpregabilidade extends Processador {
                 try {
                     Empregabilidade dados = extrairDados(row);
                     batchEmpregabilidade.add(dados);
+
+                    Integer fkAreaPrimeiroIndex = jdbcTemplate.update(" INSERT INTO dados_empregabilidade_tb (fk_area)\n" +
+                            "    SELECT a.id\n" +
+                            "    FROM area a\n" +
+                            "    WHERE a.id = CAST(SUBSTRING(?, 1, 1) AS INTEGER)", empregabilidade.getCbo2002());
+                    empregabilidade.setFk_area(fkAreaPrimeiroIndex);
+
+//                    Integer fkMunicipioPath = jdbcTemplate.update("""
+//                            INSERT INTO dados_empregabilidade_tb (fk_municipio)
+//                            """)
 
                     if (batchEmpregabilidade.size() == BATCH_SIZE) {
                         enviarBatch(batchEmpregabilidade);
@@ -117,8 +135,8 @@ public class ProcessadorEmpregabilidade extends Processador {
         System.out.println("Inserindo " + dadosEmpregabilidadeList.size() + " registros no banco.");
 
         String sql = "INSERT INTO empregabilidade (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia, " +
-                "categoria, grau_instrucao, salario_mensal) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "categoria, grau_instrucao, salario_mensal, fk_area) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
@@ -129,6 +147,7 @@ public class ProcessadorEmpregabilidade extends Processador {
             ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");
             ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
             ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
+            ps.setInt(9, dados.getFk_area() != null ? dados.getFk_area() : 0);
         });
         logService.registrarLog("BatchEmpregabilidade", "ProcessadorEmpregabilidade", "SUCESSO", "Sucesso na inserção de Batch");
     }
