@@ -11,12 +11,12 @@ public class Empregabilidade {
     private String categoria;
     private String grauInstrucao;
     private Double salarioMensal;
-    private Integer fk_municipio;
+    private Integer fk_uf;
     private Integer fk_area;
 
     public Empregabilidade(){}
 
-    public Empregabilidade(Integer ano, String siglaUf, String cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_municipio, Integer fk_area) {
+    public Empregabilidade(Integer ano, String siglaUf, String cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.cbo2002 = cbo2002;
@@ -25,7 +25,7 @@ public class Empregabilidade {
         this.categoria = categoria;
         this.grauInstrucao = grauInstrucao;
         this.salarioMensal = salarioMensal;
-        this.fk_municipio = fk_municipio;
+        this.fk_uf = fk_uf;
         this.fk_area = fk_area;
     }
 
@@ -93,12 +93,12 @@ public class Empregabilidade {
         this.salarioMensal = salarioMensal;
     }
 
-    public Integer getFk_municipio() {
-        return fk_municipio;
+    public Integer getFk_uf() {
+        return fk_uf;
     }
 
-    public void setFk_municipio(Integer fk_municipio) {
-        this.fk_municipio = fk_municipio;
+    public void setFk_uf(Integer fk_uf) {
+        this.fk_uf = fk_uf;
     }
 
     public Integer getFk_area() {

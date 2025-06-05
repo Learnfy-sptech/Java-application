@@ -1,8 +1,11 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Area;
 import com.learnfy.modelo.Empregabilidade;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -19,13 +22,11 @@ import java.util.Map;
 public class ProcessadorEmpregabilidade extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
-    private final String bucketName;
     private final LogService logService;
 
-    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName, LogService logService) {
+    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
-        this.bucketName = bucketName;
         this.logService = logService;
     }
 
@@ -52,6 +53,15 @@ public class ProcessadorEmpregabilidade extends Processador {
             final int BATCH_SIZE = 300;
             List<Empregabilidade> batchEmpregabilidade = new ArrayList<>(BATCH_SIZE);
 
+            Map<String, Integer> areasCadastradas = new HashMap<>();
+            jdbcTemplate.query("SELECT id_area, nome FROM area_tb", rs -> {
+                areasCadastradas.put(rs.getString("nome").trim().toLowerCase(), rs.getInt("id_area"));
+            });
+
+            Map<String, Integer> cboCadastrados = new HashMap<>();
+            jdbcTemplate.query("SELECT cbo2002 FROM area_tb", rs -> {
+                cboCadastrados.put(rs.getString("nome").trim().toLowerCase(), rs.getInt("id_area"));
+            });
             boolean primeiraLinha = true;
 
             Empregabilidade empregabilidade;
@@ -68,15 +78,41 @@ public class ProcessadorEmpregabilidade extends Processador {
                     Empregabilidade dados = extrairDados(row);
                     batchEmpregabilidade.add(dados);
 
-                    Integer fkAreaPrimeiroIndex = jdbcTemplate.update(" INSERT INTO dados_empregabilidade_tb (fk_area)\n" +
-                            "    SELECT a.id\n" +
-                            "    FROM area a\n" +
-                            "    WHERE a.id = CAST(SUBSTRING(?, 1, 1) AS INTEGER)", empregabilidade.getCbo2002());
-                    empregabilidade.setFk_area(fkAreaPrimeiroIndex);
+                    Integer fkAreaPrimeiroIndex = jdbcTemplate.queryForObject(
+                            "SELECT a.id FROM area a WHERE a.id = CAST(SUBSTRING(?, 1, 1) AS INTEGER)",
+                            Integer.class,
+                            empregabilidade.getCbo2002()
+                    );
+                    if (fkAreaPrimeiroIndex != null) {
+                        jdbcTemplate.update("INSERT INTO dados_empregabilidade_tb (fk_area) VALUES (?)", fkAreaPrimeiroIndex);
+                        empregabilidade.setFk_area(fkAreaPrimeiroIndex);
+                    }
 
-//                    Integer fkMunicipioPath = jdbcTemplate.update("""
-//                            INSERT INTO dados_empregabilidade_tb (fk_municipio)
-//                            """)
+                    Integer fkAreaPath = jdbcTemplate.queryForObject(
+                            "SELECT id_uf FROM uf_tb WHERE sigla = ?",
+                            Integer.class,
+                            empregabilidade.getSiglaUf()
+                    );
+                    if (fkAreaPath != null) {
+                        jdbcTemplate.update("INSERT INTO dados_empregabilidade_tb (fk_uf) VALUES (?)", fkAreaPath);
+                        empregabilidade.setFk_uf(fkAreaPath);
+                    }
+
+
+//
+//                    Integer fkAreaPrimeiroIndex = jdbcTemplate.update(" INSERT INTO dados_empregabilidade_tb (fk_area)\n" +
+//                            "    SELECT a.id\n" +
+//                            "    FROM area a\n" +
+//                            "    WHERE a.id = CAST(SUBSTRING(?, 1, 1) AS INTEGER)", empregabilidade.getCbo2002());
+//                    empregabilidade.setFk_area(fkAreaPrimeiroIndex);
+//
+//                    Integer fkAreaPath = jdbcTemplate.update("""
+//                            INSERT INTO dados_empregabilidade_tb (fk_uf)
+//                            SELECT id_uf
+//                            FROM uf_tb
+//                            WHERE sigla IN (SELECT ? FROM dados_empregabilidade_tb);
+//                            """, empregabilidade.getSiglaUf());
+//                    empregabilidade.setFk_uf(fkAreaPath);
 
                     if (batchEmpregabilidade.size() == BATCH_SIZE) {
                         enviarBatch(batchEmpregabilidade);
@@ -84,6 +120,7 @@ public class ProcessadorEmpregabilidade extends Processador {
                     }
                 } catch (Exception e) {
                     System.err.println("Erro ao processar linha " + row.getRowNum() + ": " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
 
@@ -135,8 +172,8 @@ public class ProcessadorEmpregabilidade extends Processador {
         System.out.println("Inserindo " + dadosEmpregabilidadeList.size() + " registros no banco.");
 
         String sql = "INSERT INTO empregabilidade (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia, " +
-                "categoria, grau_instrucao, salario_mensal, fk_area) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "categoria, grau_instrucao, salario_mensal, fk_area, fk_uf) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
@@ -148,7 +185,20 @@ public class ProcessadorEmpregabilidade extends Processador {
             ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
             ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
             ps.setInt(9, dados.getFk_area() != null ? dados.getFk_area() : 0);
+            ps.setInt(10, dados.getFk_uf() != null ? dados.getFk_uf() : 0);
         });
         logService.registrarLog("BatchEmpregabilidade", "ProcessadorEmpregabilidade", "SUCESSO", "Sucesso na inserção de Batch");
+    }
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        LogService logService = new LogService(jdbcTemplate);
+        Processador processadorEmpregabilidade= new ProcessadorEmpregabilidade(jdbcTemplate, s3Client, logService);
+        try {
+            processadorEmpregabilidade.processar(bucket, "planilhas/dados_empregabilidade/explodir-vai.csv");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados dos Cursos e Áreas, erro: %s", e.getMessage()));
+        }
     }
 }
