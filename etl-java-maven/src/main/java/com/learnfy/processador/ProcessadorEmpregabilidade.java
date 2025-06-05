@@ -90,7 +90,7 @@ public class ProcessadorEmpregabilidade extends Processador {
                 switch (cell.getColumnIndex()) {
                     case 0 -> dados.setAno((int) getNumericValue(cell));
                     case 1 -> dados.setSiglaUf(getStringValue(cell));
-                    case 2 -> dados.setCbo2002((int) getNumericValue(cell));
+                    case 2 -> dados.setCbo2002(getStringValue(cell));
                     case 3 -> dados.setCbo2002Descricao(getStringValue(cell));
                     case 4 -> dados.setCbo2002DescricaoFamilia(getStringValue(cell));
                     case 5 -> dados.setCategoria(getStringValue(cell));
@@ -123,7 +123,7 @@ public class ProcessadorEmpregabilidade extends Processador {
         jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
             ps.setString(2, dados.getSiglaUf() != null ? dados.getSiglaUf() : "");
-            ps.setInt(3, dados.getCbo2002() != null ? dados.getCbo2002() : 0);
+            ps.setString(3, dados.getCbo2002() != null ? dados.getCbo2002() : "");
             ps.setString(4, dados.getCbo2002Descricao() != null ? dados.getCbo2002Descricao() : "");
             ps.setString(5, dados.getCbo2002DescricaoFamilia() != null ? dados.getCbo2002DescricaoFamilia() : "");
             ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");
