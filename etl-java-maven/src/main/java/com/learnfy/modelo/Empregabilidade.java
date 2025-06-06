@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 public class Empregabilidade {
     private Integer ano;
     private String siglaUf;
-    private String cbo2002;
+    private Integer cbo2002;
     private String cbo2002Descricao;
     private String cbo2002DescricaoFamilia;
     private String categoria;
@@ -16,7 +16,7 @@ public class Empregabilidade {
 
     public Empregabilidade(){}
 
-    public Empregabilidade(Integer ano, String siglaUf, String cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
+    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.cbo2002 = cbo2002;
@@ -45,11 +45,11 @@ public class Empregabilidade {
         this.siglaUf = siglaUf;
     }
 
-    public String getCbo2002() {
+    public Integer getCbo2002() {
         return cbo2002;
     }
 
-    public void setCbo2002(String cbo2002) {
+    public void setCbo2002(Integer cbo2002) {
         this.cbo2002 = cbo2002;
     }
 
