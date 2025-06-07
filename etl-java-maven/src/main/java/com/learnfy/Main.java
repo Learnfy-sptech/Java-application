@@ -2,6 +2,7 @@ package com.learnfy;
 
 import com.learnfy.logs.LogService;
 import com.learnfy.processador.*;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 import com.learnfy.s3.S3Service;
@@ -9,6 +10,10 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
+        ZipSecureFile.setMinInflateRatio(0.0);
+
+        System.setProperty("org.apache.commons.io.IOUtils.byteArrayMaxOverride", String.valueOf(Integer.MAX_VALUE));
+
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
         String prefixo = "planilhas/";
