@@ -178,7 +178,7 @@ public class ProcessadorEmpregabilidade extends Processador {
     private void enviarBatch(List<Empregabilidade> dadosEmpregabilidadeList) {
         System.out.println("Inserindo " + dadosEmpregabilidadeList.size() + " registros no banco.");
 
-        String sql = "INSERT INTO empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia," +
+        String sql = "INSERT INTO dados_empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia," +
                 "categoria, grau_instrucao, salario_mensal, fk_area, fk_uf)" +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 

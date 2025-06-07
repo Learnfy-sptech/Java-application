@@ -63,7 +63,7 @@ CREATE TABLE curso_ofertado_tb (
     CONSTRAINT fk_curso_ofertado_curso FOREIGN KEY (fk_curso) REFERENCES curso_tb(id_curso)
 );
 
-CREATE TABLE empregabilidade_tb(
+CREATE TABLE dados_empregabilidade_tb(
     id_emprego INT PRIMARY KEY AUTO_INCREMENT,
     ano INT,
     sigla_uf VARCHAR (255),
