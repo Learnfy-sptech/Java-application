@@ -1,10 +1,10 @@
 package com.learnfy.processador;
 
+import com.learnfy.ConexaoBanco;
+import com.learnfy.ConfigLoader;
 import com.learnfy.logs.LogService;
-import com.learnfy.modelo.CursoOfertado;
 import com.learnfy.modelo.Empregabilidade;
-import org.apache.commons.math3.ode.nonstiff.EmbeddedRungeKuttaFieldIntegrator;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import com.learnfy.s3.S3Service;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
@@ -12,7 +12,6 @@ import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.usermodel.XSSFComment;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -88,13 +87,13 @@ public class ProcessadorEmpregabilidade extends Processador {
                             Integer fkArea = coletarFkArea(empregabilidade.getCbo2002());
 
                             if (fkUf == null) {
-                                logService.registrarLog(key, "ProcessadorCursoOfertado", "ALERTA",
-                                        String.format("Linha ignorada: Estado não encontrado: '%s' | '%s'",
+                                logService.registrarLog(key, "ProcessadorEmpregabilidade", "ALERTA",
+                                        String.format("Linha ignorada: Estado não encontrado: '%s'",
                                                 empregabilidade.getSiglaUf()));
                                 return;
                             } else if (fkArea == null) {
-                                logService.registrarLog(key, "ProcessadorCursoOfertado", "ALERTA",
-                                        String.format("Linha ignorada: Estado não encontrado: '%s' | '%s'",
+                                logService.registrarLog(key, "ProcessadorEmpregabilidade", "ALERTA",
+                                        String.format("Linha ignorada: Área não encontrado: '%s'",
                                                 empregabilidade.getSiglaUf()));
                                 return;
                             }
@@ -179,7 +178,7 @@ public class ProcessadorEmpregabilidade extends Processador {
     private void enviarBatch(List<Empregabilidade> dadosEmpregabilidadeList) {
         System.out.println("Inserindo " + dadosEmpregabilidadeList.size() + " registros no banco.");
 
-        String sql = "IINSERT INTO dados_empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia," +
+        String sql = "INSERT INTO empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia," +
                 "categoria, grau_instrucao, salario_mensal, fk_area, fk_uf)" +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -208,8 +207,41 @@ public class ProcessadorEmpregabilidade extends Processador {
 
     private Integer coletarFkArea(String cbo) {
         switch (cbo.charAt(0)) {
-
+            case '0':
+                return 1;
+            case '1':
+                return 8;
+            case '2':
+                return 3;
+            case '3':
+                return 4;
+            case '4':
+                return 9;
+            case '5':
+                return 2;
+            case '6':
+                return 6;
+            case '7':
+                return 7;
+            case '8':
+                return 5;
+            case '9':
+                return 2;
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        String bucket = ConfigLoader.get("S3_BUCKET");
+        S3Client s3Client = S3Service.criarS3Client();
+        JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
+        LogService logService = new LogService(jdbcTemplate);
+
+        Processador processadorEmpregabilidade = new ProcessadorEmpregabilidade(jdbcTemplate, s3Client, bucket, logService);
+        try {
+            processadorEmpregabilidade.processar(bucket, "planilhas/dados_empregabilidade/empregabilidade.xlsx");
+        } catch (Exception e) {
+            System.out.println(String.format("Não foi possível processar os dados de Empregabilidade, erro: %s", e.getMessage()));
+        }
     }
 }

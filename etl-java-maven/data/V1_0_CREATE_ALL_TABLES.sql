@@ -62,3 +62,27 @@ CREATE TABLE curso_ofertado_tb (
     CONSTRAINT fk_curso_ofertado_ies FOREIGN KEY (fk_ies) REFERENCES ies_tb(id_ies),
     CONSTRAINT fk_curso_ofertado_curso FOREIGN KEY (fk_curso) REFERENCES curso_tb(id_curso)
 );
+
+CREATE TABLE empregabilidade_tb(
+    id_emprego INT PRIMARY KEY AUTO_INCREMENT,
+    ano INT,
+    sigla_uf VARCHAR (255),
+    cbo_2002 VARCHAR(255),
+    cbo_2002_descricao VARCHAR(255),
+    cbo_2002_descricao_familia VARCHAR(255),
+    categoria VARCHAR (255),
+    grau_instrucao VARCHAR (255),
+    salario_mensal DOUBLE,
+    fk_area INT,
+    fk_uf INT,
+    foreign key (fk_area) references area_tb(id_area),
+    foreign key (fk_uf) references uf_tb(id_uf)
+);
+
+CREATE TABLE logs_processamento (
+    id_log INT PRIMARY KEY AUTO_INCREMENT,
+    nome_arquivo VARCHAR(100),
+    tipo_processador VARCHAR(120),
+    status VARCHAR(50),
+    mensagem TEXT
+);

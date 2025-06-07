@@ -14,7 +14,7 @@ public class Empregabilidade {
 
     public Empregabilidade(){}
 
-    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
+    public Empregabilidade(Integer ano, String siglaUf, String cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.cbo2002 = cbo2002;
