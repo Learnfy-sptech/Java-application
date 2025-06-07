@@ -2,45 +2,43 @@ package com.learnfy.processador;
 
 import com.learnfy.ConexaoBanco;
 import com.learnfy.ConfigLoader;
-import com.learnfy.ConversorCsv;
+import com.learnfy.logs.LogService;
 import com.learnfy.modelo.Empregabilidade;
 import com.learnfy.s3.S3Service;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.openxml4j.util.ZipSecureFile;
+import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
+import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-import software.amazon.awssdk.services.s3.S3Client;
-import com.learnfy.logs.LogService;
-
 public class ProcessadorEmpregabilidade extends Processador {
     private final JdbcTemplate jdbcTemplate;
     private final S3Client s3Client;
+    private final String bucketName;
     private final LogService logService;
 
-    static {
-        // Aumenta o limite para leitura de registros grandes (ex: 300MB ou mais)
-        IOUtils.setByteArrayMaxOverride(500_000_000); // ou um valor ainda maior se necessário
-    }
-
-    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, LogService logService) {
+    public ProcessadorEmpregabilidade(JdbcTemplate jdbcTemplate, S3Client s3Client, String bucketName, LogService logService) {
         this.jdbcTemplate = jdbcTemplate;
         this.s3Client = s3Client;
+        this.bucketName = bucketName;
         this.logService = logService;
     }
 
     @Override
     public void processar(String bucket, String key) throws Exception {
-
         System.out.println("Iniciando processamento do arquivo: " + key);
         logService.registrarLog(key, "ProcessadorEmpregabilidade", "START", "Iniciando processamento do arquivo.");
 
@@ -49,119 +47,114 @@ public class ProcessadorEmpregabilidade extends Processador {
                 .key(key)
                 .build())) {
 
-            Workbook workbook;
-            if (key.endsWith(".xls")) {
-                workbook = new HSSFWorkbook(inputStream);
-            } else {
-                workbook = new XSSFWorkbook(inputStream);
-            }
-
-            if (key.endsWith(".csv")) {
-                workbook = ConversorCsv.convertCsvToXlsx(inputStream);
-            }
-
-            Sheet sheet = workbook.getSheetAt(0);
-            System.out.println("Planilha lida com sucesso. Processando linhas...");
-
-            final int BATCH_SIZE = 300;
-            List<Empregabilidade> batchEmpregabilidade = new ArrayList<>(BATCH_SIZE);
-
-            Map<String, Integer> areasCadastradas = new HashMap<>();
-            jdbcTemplate.query("SELECT id_area, nome FROM area_tb", rs -> {
-                areasCadastradas.put(rs.getString("nome").trim().toLowerCase(), rs.getInt("id_area"));
-            });
-
-            System.out.println("Lendo áreas cadastradas:");
-            jdbcTemplate.query("SELECT id_area, nome FROM area_tb", rs -> {
-                String nome = rs.getString("nome");
-                Integer id = rs.getInt("id_area");
-                System.out.println("-> " + nome + " = " + id);
-                areasCadastradas.put(nome.trim().toLowerCase(), id);
-            });
-            System.out.println("Total de áreas: " + areasCadastradas.size());
-
-            Map<String, Integer> cboCadastrados = new HashMap<>();
-            jdbcTemplate.query("SELECT cbo_2002 FROM dados_empregabilidade_tb", rs -> {
-                cboCadastrados.put(rs.getString("nome").trim().toLowerCase(), rs.getInt("id_area"));
-            });
-            boolean primeiraLinha = true;
-
-            Empregabilidade empregabilidade;
-
-            empregabilidade = new Empregabilidade();
-
-            for (Row row : sheet) {
-                if (primeiraLinha) {
-                    primeiraLinha = false;
-                    continue;
+                if (key.endsWith(".xls")) {
+                    throw new UnsupportedOperationException("Arquivos .xls não são suportados no modo SAX.");
                 }
 
-                try {
-                    Empregabilidade dados = extrairDados(row);
-                    batchEmpregabilidade.add(dados);
+                Map<String, Integer> siglaUfToId = jdbcTemplate.query(
+                        "SELECT sigla, id_uf FROM uf_tb",
+                        rs -> {
+                            Map<String, Integer> map = new HashMap<>();
+                            while (rs.next()) {
+                                map.put(rs.getString("sigla").trim(), rs.getInt("id_uf"));
+                            }
+                            return map;
+                        });
 
-                    Integer cboInt = dados.getCbo2002();
-                    if (cboInt != null) {
-                        String cboStr = cboInt.toString();
-                        if (!cboStr.isEmpty()) {
-                            char primeiroDigito = cboStr.charAt(0); // exemplo: '1'
-                            Integer primeiroDigitoInt = Character.getNumericValue(primeiroDigito);
+                IOUtils.setByteArrayMaxOverride(1_000_000_000);
+                OPCPackage pkg = OPCPackage.open(inputStream);
+                XSSFReader reader = new XSSFReader(pkg);
+                ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
 
-                            // Suponha que seu Map tenha chaves como "1", "2", ..., "9"
-                            if (primeiroDigitoInt != null) {
-                                dados.setFk_area(primeiroDigitoInt);
-                            } else {
-                                System.err.println("Área não encontrada para CBO começando com: " + primeiroDigito + " (linha " + row.getRowNum() + ")");
-                                dados.setFk_area(null);
+                DataFormatter formatter = new DataFormatter();
+                final int BATCH_SIZE = 100;
+                List<Empregabilidade> batchEmpregabilidade = new ArrayList<>(BATCH_SIZE);
+
+                XSSFSheetXMLHandler.SheetContentsHandler handler = new XSSFSheetXMLHandler.SheetContentsHandler() {
+                    private Empregabilidade empregabilidade;
+                    private int currentCol = -1;
+
+                    @Override
+                    public void startRow(int rowNum) {
+                        empregabilidade = (rowNum == 0) ? null : new Empregabilidade();
+                    }
+
+                    @Override
+                    public void endRow(int rowNum) {
+
+                        if (empregabilidade != null) {
+                            Integer fkUf = siglaUfToId.get(empregabilidade.getSiglaUf());
+                            Integer fkArea = coletarFkArea(empregabilidade.getCbo2002());
+
+                            if (fkUf == null) {
+                                logService.registrarLog(key, "ProcessadorEmpregabilidade", "ALERTA",
+                                        String.format("Linha ignorada: Estado não encontrado: '%s'",
+                                                empregabilidade.getSiglaUf()));
+                                return;
+                            } else if (fkArea == null) {
+                                logService.registrarLog(key, "ProcessadorEmpregabilidade", "ALERTA",
+                                        String.format("Linha ignorada: Área não encontrado: '%s'",
+                                                empregabilidade.getSiglaUf()));
+                                return;
+                            }
+
+                            try {
+                                empregabilidade.setFkUf(fkUf);
+                                empregabilidade.setFkArea(fkArea);
+                                batchEmpregabilidade.add(empregabilidade);
+                                if (batchEmpregabilidade.size() == BATCH_SIZE) {
+                                    enviarBatch(batchEmpregabilidade);
+                                    batchEmpregabilidade.clear();
+                                }
+                            } catch (Exception e) {
+                                logService.registrarLog(key, "ProcessadorCursoOfertado", "ERRO",
+                                        "Erro ao adicionar curso no batch: " + e.getMessage());
                             }
                         }
+
+
                     }
-                    String sigla = dados.getSiglaUf();
-                    if (sigla != null && !sigla.isBlank()) {
-                        try {
-                            Integer fkUf = jdbcTemplate.queryForObject(
-                                    "SELECT id_uf FROM uf_tb WHERE sigla = ?",
-                                    Integer.class,
-                                    sigla
-                            );
-                            dados.setFk_uf(fkUf);
-                        } catch (Exception ex) {
-                            System.err.println("UF não encontrada para sigla: " + sigla);
+
+                    @Override
+                    public void cell(String cellReference, String formattedValue, XSSFComment comment) {
+                        if (empregabilidade == null) return;
+                        String col = cellReference.replaceAll("\\d", "");
+                        currentCol = colunaParaIndice(col);
+
+                        formattedValue = formattedValue.trim();
+
+                        switch (currentCol) {
+                            case 0 -> empregabilidade.setAno(parseInt(formattedValue));
+                            case 1 -> empregabilidade.setSiglaUf(tratarTexto(formattedValue));
+                            case 2 -> empregabilidade.setCbo2002(tratarTexto(formattedValue));
+                            case 3 -> empregabilidade.setCbo2002Descricao(tratarTexto(formattedValue));
+                            case 4 -> empregabilidade.setCbo2002DescricaoFamilia(tratarTexto(formattedValue));
+                            case 5 -> empregabilidade.setCategoria(tratarTexto(formattedValue));
+                            case 6 -> empregabilidade.setGrauInstrucao(tratarTexto(formattedValue));
+                            case 7 -> empregabilidade.setSalarioMensal(parseDouble(formattedValue));
                         }
                     }
 
-
-//
-//                    Integer fkAreaPrimeiroIndex = jdbcTemplate.update(" INSERT INTO dados_empregabilidade_tb (fk_area)\n" +
-//                            "    SELECT a.id\n" +
-//                            "    FROM area a\n" +
-//                            "    WHERE a.id = CAST(SUBSTRING(?, 1, 1) AS INTEGER)", empregabilidade.getCbo2002());
-//                    empregabilidade.setFk_area(fkAreaPrimeiroIndex);
-//
-//                    Integer fkAreaPath = jdbcTemplate.update("""
-//                            INSERT INTO dados_empregabilidade_tb (fk_uf)
-//                            SELECT id_uf
-//                            FROM uf_tb
-//                            WHERE sigla IN (SELECT ? FROM dados_empregabilidade_tb);
-//                            """, empregabilidade.getSiglaUf());
-//                    empregabilidade.setFk_uf(fkAreaPath);
-
-                    if (batchEmpregabilidade.size() == BATCH_SIZE) {
-                        enviarBatch(batchEmpregabilidade);
-                        batchEmpregabilidade.clear();
+                    @Override
+                    public void headerFooter(String text, boolean isHeader, String tagName) {
                     }
-                } catch (Exception e) {
-                    System.err.println("Erro ao processar linha " + row.getRowNum() + ": " + e.getMessage());
-                    e.printStackTrace();
+                };
+
+                XMLReader parser = XMLReaderFactory.createXMLReader();
+                XSSFSheetXMLHandler xmlHandler = new XSSFSheetXMLHandler(
+                        reader.getStylesTable(), null, strings, handler, formatter, false);
+                parser.setContentHandler(xmlHandler);
+
+                try (InputStream sheet = reader.getSheetsData().next()) {
+                    InputSource sheetSource = new InputSource(sheet);
+                    parser.parse(sheetSource);
                 }
-            }
 
             if (!batchEmpregabilidade.isEmpty()) {
                 enviarBatch(batchEmpregabilidade);
                 batchEmpregabilidade.clear();
             }
 
-            workbook.close();
             System.out.println("✔ Leitura da planilha '" + key + "' finalizada.");
             logService.registrarLog(key, "ProcessadorEmpregabilidade", "SUCESSO", "Processamento finalizado com sucesso.");
         } catch (Exception e) {
@@ -170,97 +163,85 @@ public class ProcessadorEmpregabilidade extends Processador {
         }
     }
 
-    private Empregabilidade extrairDados(Row row) {
-        Empregabilidade dados = new Empregabilidade();
-        try {
-            for (Cell cell : row) {
-                switch (cell.getColumnIndex()) {
-                    case 0 -> dados.setAno((int) getNumericValue(cell));
-                    case 1 -> dados.setSiglaUf(getStringValue(cell));
-                    case 2 -> dados.setCbo2002((int) getNumericValue(cell));
-                    case 3 -> dados.setCbo2002Descricao(getStringValue(cell));
-                    case 4 -> dados.setCbo2002DescricaoFamilia(getStringValue(cell));
-                    case 5 -> dados.setCategoria(getStringValue(cell));
-                    case 6 -> dados.setGrauInstrucao(getStringValue(cell));
-                    case 7 -> dados.setSalarioMensal(getNumericValue(cell));
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Erro ao extrair dados da linha: " + e.getMessage());
-            logService.registrarLog("LinhaEmpregabilidade", "ProcessadorEmpregabilidade", "ALERTA", "Erro ao extrair dados da linha: " + e.getMessage());
-        }
-        return dados;
+    private int parseInt(String value) {
+        return value != null && !value.isEmpty() ? Integer.parseInt(value) : 0;
     }
 
-    private double getNumericValue(Cell cell) {
-        return cell.getCellType() == CellType.NUMERIC ? cell.getNumericCellValue() : 0;
+    private double parseDouble(String value) {
+        return value != null && !value.isEmpty() ? Double.parseDouble(value) : 0.0;
     }
 
-    private String getStringValue(Cell cell) {
-        return cell.getCellType() == CellType.STRING ? cell.getStringCellValue() : "";
+    private String tratarTexto(String valor) {
+        return valor != null ? valor.trim().toUpperCase() : "";
     }
-
-    private String getStringOrNumericValue(Cell cell) {
-        if (cell == null) return "";
-        if (cell.getCellType() == CellType.STRING) {
-            return cell.getStringCellValue();
-        } else if (cell.getCellType() == CellType.NUMERIC) {
-            return String.valueOf((int) cell.getNumericCellValue());
-        } else {
-            return "";
-        }
-    }
-
 
     private void enviarBatch(List<Empregabilidade> dadosEmpregabilidadeList) {
         System.out.println("Inserindo " + dadosEmpregabilidadeList.size() + " registros no banco.");
 
-        String sql = "INSERT INTO dados_empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia, " +
-                "categoria, grau_instrucao, salario_mensal, fk_area, fk_uf) " +
+        String sql = "INSERT INTO dados_empregabilidade_tb (ano, sigla_uf, cbo_2002, cbo_2002_descricao, cbo_2002_descricao_familia," +
+                "categoria, grau_instrucao, salario_mensal, fk_area, fk_uf)" +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
             ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
             ps.setString(2, dados.getSiglaUf() != null ? dados.getSiglaUf() : "");
-            ps.setInt(3, dados.getCbo2002() != null ? dados.getCbo2002() : 0);
+            ps.setString(3, dados.getCbo2002() != null ? dados.getCbo2002() : "");
             ps.setString(4, dados.getCbo2002Descricao() != null ? dados.getCbo2002Descricao() : "");
             ps.setString(5, dados.getCbo2002DescricaoFamilia() != null ? dados.getCbo2002DescricaoFamilia() : "");
             ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");
             ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
             ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
-            ps.setInt(9, dados.getFk_area() != null ? dados.getFk_area() : 0);
-            ps.setInt(10, dados.getFk_uf() != null ? dados.getFk_uf() : 0);
+            ps.setInt(9, dados.getFkArea());
+            ps.setInt(10, dados.getFkUf());
         });
-
-//        jdbcTemplate.batchUpdate(sql, dadosEmpregabilidadeList, dadosEmpregabilidadeList.size(), (ps, dados) -> {
-//            ps.setInt(1, dados.getAno() != null ? dados.getAno() : 0);
-//            ps.setString(2, dados.getSiglaUf() != null ? dados.getSiglaUf() : "");
-//            ps.setString(3, dados.getCbo2002() != null ? dados.getCbo2002() : "");
-//            ps.setString(4, dados.getCbo2002Descricao() != null ? dados.getCbo2002Descricao() : "");
-//            ps.setString(5, dados.getCbo2002DescricaoFamilia() != null ? dados.getCbo2002DescricaoFamilia() : "");
-//            ps.setString(6, dados.getCategoria() != null ? dados.getCategoria() : "");
-//            ps.setString(7, dados.getGrauInstrucao() != null ? dados.getGrauInstrucao() : "");
-//            ps.setDouble(8, dados.getSalarioMensal() != null ? dados.getSalarioMensal() : 0.0);
-//            ps.setInt(9, dados.getFk_area() != null ? dados.getFk_area() : 0);
-//            ps.setInt(10, dados.getFk_uf() != null ? dados.getFk_uf() : 0);
-//        });
         logService.registrarLog("BatchEmpregabilidade", "ProcessadorEmpregabilidade", "SUCESSO", "Sucesso na inserção de Batch");
     }
 
+    private int colunaParaIndice(String col) {
+        int index = 0;
+        for (char c : col.toCharArray()) {
+            index = index * 26 + (c - 'A' + 1);
+        }
+        return index - 1;
+    }
+
+    private Integer coletarFkArea(String cbo) {
+        switch (cbo.charAt(0)) {
+            case '0':
+                return 1;
+            case '1':
+                return 8;
+            case '2':
+                return 3;
+            case '3':
+                return 4;
+            case '4':
+                return 9;
+            case '5':
+                return 2;
+            case '6':
+                return 6;
+            case '7':
+                return 7;
+            case '8':
+                return 5;
+            case '9':
+                return 2;
+        }
+        return null;
+    }
+
     public static void main(String[] args) {
-        ZipSecureFile.setMinInflateRatio(0.0);
-
-        IOUtils.setByteArrayMaxOverride(500_000_000); // Aumenta para 300MB
-
         String bucket = ConfigLoader.get("S3_BUCKET");
         S3Client s3Client = S3Service.criarS3Client();
         JdbcTemplate jdbcTemplate = ConexaoBanco.getJdbcTemplate();
         LogService logService = new LogService(jdbcTemplate);
-        Processador processadorEmpregabilidade = new ProcessadorEmpregabilidade(jdbcTemplate, s3Client, logService);
+
+        Processador processadorEmpregabilidade = new ProcessadorEmpregabilidade(jdbcTemplate, s3Client, bucket, logService);
         try {
-            processadorEmpregabilidade.processar(bucket, "planilhas/dados_empregabilidade/vai-explodir-tratado.xlsx");
+            processadorEmpregabilidade.processar(bucket, "planilhas/dados_empregabilidade/empregabilidade.xlsx");
         } catch (Exception e) {
-            System.out.println(String.format("Não foi possível processar os dados dos Cursos e Áreas, erro: %s", e.getMessage()));
+            System.out.println(String.format("Não foi possível processar os dados de Empregabilidade, erro: %s", e.getMessage()));
         }
     }
 }

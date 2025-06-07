@@ -1,11 +1,9 @@
 package com.learnfy.modelo;
 
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
-
 public class Empregabilidade {
     private Integer ano;
     private String siglaUf;
-    private Integer cbo2002;
+    private String cbo2002;
     private String cbo2002Descricao;
     private String cbo2002DescricaoFamilia;
     private String categoria;
@@ -16,7 +14,7 @@ public class Empregabilidade {
 
     public Empregabilidade(){}
 
-    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
+    public Empregabilidade(Integer ano, String siglaUf, String cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.cbo2002 = cbo2002;
@@ -45,11 +43,11 @@ public class Empregabilidade {
         this.siglaUf = siglaUf;
     }
 
-    public Integer getCbo2002() {
+    public String getCbo2002() {
         return cbo2002;
     }
 
-    public void setCbo2002(Integer cbo2002) {
+    public void setCbo2002(String cbo2002) {
         this.cbo2002 = cbo2002;
     }
 
@@ -93,19 +91,35 @@ public class Empregabilidade {
         this.salarioMensal = salarioMensal;
     }
 
-    public Integer getFk_uf() {
+    public Integer getFkUf() {
         return fk_uf;
     }
 
-    public void setFk_uf(Integer fk_uf) {
+    public void setFkUf(Integer fk_uf) {
         this.fk_uf = fk_uf;
     }
 
-    public Integer getFk_area() {
+    public Integer getFkArea() {
         return fk_area;
     }
 
-    public void setFk_area(Integer fk_area) {
+    public void setFkArea(Integer fk_area) {
         this.fk_area = fk_area;
+    }
+
+    @Override
+    public String toString() {
+        return "Empregabilidade{" +
+                "ano=" + ano +
+                ", siglaUf='" + siglaUf + '\'' +
+                ", cbo2002=" + cbo2002 +
+                ", cbo2002Descricao='" + cbo2002Descricao + '\'' +
+                ", cbo2002DescricaoFamilia='" + cbo2002DescricaoFamilia + '\'' +
+                ", categoria='" + categoria + '\'' +
+                ", grauInstrucao='" + grauInstrucao + '\'' +
+                ", salarioMensal=" + salarioMensal +
+                ", fk_uf=" + fk_uf +
+                ", fk_area=" + fk_area +
+                '}';
     }
 }
