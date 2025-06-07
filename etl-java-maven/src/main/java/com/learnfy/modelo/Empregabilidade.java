@@ -3,26 +3,28 @@ package com.learnfy.modelo;
 public class Empregabilidade {
     private Integer ano;
     private String siglaUf;
-    private Integer cbo2002;
+    private String cbo2002;
     private String cbo2002Descricao;
     private String cbo2002DescricaoFamilia;
     private String categoria;
     private String grauInstrucao;
     private Double salarioMensal;
+    private Integer fk_uf;
+    private Integer fk_area;
 
-    public Empregabilidade() {
-    }
+    public Empregabilidade(){}
 
-    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo_2002_descricao,
-                           String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal) {
+    public Empregabilidade(Integer ano, String siglaUf, Integer cbo2002, String cbo2002Descricao, String cbo2002DescricaoFamilia, String categoria, String grauInstrucao, Double salarioMensal, Integer fk_uf, Integer fk_area) {
         this.ano = ano;
         this.siglaUf = siglaUf;
         this.cbo2002 = cbo2002;
-        this.cbo2002Descricao = cbo_2002_descricao;
+        this.cbo2002Descricao = cbo2002Descricao;
         this.cbo2002DescricaoFamilia = cbo2002DescricaoFamilia;
         this.categoria = categoria;
         this.grauInstrucao = grauInstrucao;
         this.salarioMensal = salarioMensal;
+        this.fk_uf = fk_uf;
+        this.fk_area = fk_area;
     }
 
     public Integer getAno() {
@@ -41,11 +43,11 @@ public class Empregabilidade {
         this.siglaUf = siglaUf;
     }
 
-    public Integer getCbo2002() {
+    public String getCbo2002() {
         return cbo2002;
     }
 
-    public void setCbo2002(Integer cbo2002) {
+    public void setCbo2002(String cbo2002) {
         this.cbo2002 = cbo2002;
     }
 
@@ -89,6 +91,22 @@ public class Empregabilidade {
         this.salarioMensal = salarioMensal;
     }
 
+    public Integer getFkUf() {
+        return fk_uf;
+    }
+
+    public void setFkUf(Integer fk_uf) {
+        this.fk_uf = fk_uf;
+    }
+
+    public Integer getFkArea() {
+        return fk_area;
+    }
+
+    public void setFkArea(Integer fk_area) {
+        this.fk_area = fk_area;
+    }
+
     @Override
     public String toString() {
         return "Empregabilidade{" +
@@ -100,6 +118,8 @@ public class Empregabilidade {
                 ", categoria='" + categoria + '\'' +
                 ", grauInstrucao='" + grauInstrucao + '\'' +
                 ", salarioMensal=" + salarioMensal +
+                ", fk_uf=" + fk_uf +
+                ", fk_area=" + fk_area +
                 '}';
     }
 }
