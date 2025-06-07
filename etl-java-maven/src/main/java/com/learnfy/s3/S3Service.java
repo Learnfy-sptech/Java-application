@@ -23,10 +23,9 @@ public class S3Service {
         // Coletando o valor referente as variáveis de ambiente
         String accessKey = ConfigLoader.get("AWS_ACCESS_KEY_ID");
         String secretKey = ConfigLoader.get("AWS_SECRET_ACCESS_KEY");
-        String sessionToken = ConfigLoader.get("AWS_SESSION_TOKEN");
         String regionName = ConfigLoader.get("AWS_REGION");
 
-        AwsSessionCredentials credentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken);
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
         // Construindo a conexão a partir dos atributos
         return S3Client.builder()
